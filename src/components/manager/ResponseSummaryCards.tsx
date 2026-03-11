@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, CheckCircle, Clock, AlertTriangle, Shield, UserPlus } from 'lucide-react';
+import { Users, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import type { ParticipantSummary } from '@/db/types';
 
 interface ResponseSummaryCardsProps {
@@ -15,31 +15,31 @@ export function ResponseSummaryCards({ summary }: ResponseSummaryCardsProps) {
 
   const cards = [
     {
-      label: 'Total Expected',
+      label: 'סה"כ צפויים',
       value: summary.total_expected,
-      sub: `${summary.total_core} core · ${summary.total_reinforcement} reinforcement`,
+      sub: `${summary.total_core} ליבה · ${summary.total_reinforcement} תגבור`,
       icon: Users,
       color: 'text-blue-600',
       bg: 'bg-blue-50',
     },
     {
-      label: 'Responded',
+      label: 'הגיבו',
       value: `${summary.submitted} (${pct}%)`,
-      sub: summary.updated > 0 ? `${summary.updated} updated` : undefined,
+      sub: summary.updated > 0 ? `${summary.updated} עדכנו` : undefined,
       icon: CheckCircle,
       color: 'text-emerald-600',
       bg: 'bg-emerald-50',
     },
     {
-      label: 'Not Responded',
+      label: 'לא הגיבו',
       value: summary.not_started,
-      sub: summary.not_started > 0 ? 'Send reminder' : 'All clear!',
+      sub: summary.not_started > 0 ? 'שלח תזכורת' : 'הכל בסדר!',
       icon: Clock,
       color: summary.not_started > 0 ? 'text-red-600' : 'text-emerald-600',
       bg: summary.not_started > 0 ? 'bg-red-50' : 'bg-emerald-50',
     },
     {
-      label: 'With Constraints',
+      label: 'עם הגבלות',
       value: summary.with_constraints,
       sub: undefined,
       icon: AlertTriangle,

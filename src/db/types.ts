@@ -8,18 +8,18 @@ export type Preference = 'available' | 'off';
 export type AssignmentSource = 'manual' | 'recommended';
 
 export const SHIFT_LABELS: Record<ShiftType, string> = {
-  morning: 'Morning',
-  noon: 'Noon',
-  night: 'Night',
+  morning: 'בוקר',
+  noon: 'צהריים',
+  night: 'לילה',
 };
 
 export const SHIFT_ORDER: ShiftType[] = ['morning', 'noon', 'night'];
 
 export const STATUS_LABELS: Record<WeekStatus, string> = {
-  draft: 'Draft',
-  open: 'Open',
-  closed: 'Closed',
-  published: 'Published',
+  draft: 'טיוטה',
+  open: 'פתוח',
+  closed: 'סגור',
+  published: 'פורסם',
 };
 
 // ============================================================
@@ -29,11 +29,20 @@ export const STATUS_LABELS: Record<WeekStatus, string> = {
 export interface Week {
   id: string;
   title: string;
-  thursday_date: string; // YYYY-MM-DD
-  friday_date: string;
-  saturday_date: string;
+  thursday_date: string; // YYYY-MM-DD (legacy)
+  friday_date: string;   // legacy
+  saturday_date: string; // legacy
+  dates: string[];       // flexible array of YYYY-MM-DD dates
   status: WeekStatus;
   created_at: string;
+}
+
+/** Get the dates array from a week, with fallback to legacy columns */
+export function getWeekDates(week: Week): string[] {
+  if (week.dates && Array.isArray(week.dates) && week.dates.length > 0) {
+    return week.dates;
+  }
+  return [week.thursday_date, week.friday_date, week.saturday_date].filter(Boolean);
 }
 
 export interface Role {
@@ -58,8 +67,8 @@ export type ParticipantType = 'core' | 'reinforcement';
 export type ResponseStatus = 'not_started' | 'submitted' | 'updated';
 
 export const PARTICIPANT_LABELS: Record<ParticipantType, string> = {
-  core: 'Core',
-  reinforcement: 'Reinforcement',
+  core: 'ליבה',
+  reinforcement: 'תגבור',
 };
 
 export interface Soldier {
@@ -197,4 +206,32 @@ export interface BoardState {
 export interface DragItem {
   soldier_id: string;
   from_slot_id?: string; // undefined if from unassigned
+}
+
+// ============================================================
+// Conflict Detection Types
+// ============================================================
+
+export type ConflictType =
+  | 'double_assignment_same_day'
+  | 'assigned_despite_off'
+  | 'constraint_violation'
+  | 'unfair_distribution'
+  | 'missing_staff';
+
+export type ConflictSeverity = 'error' | 'warning';
+
+export interface Conflict {
+  type: ConflictType;
+  severity: ConflictSeverity;
+  soldierId?: string;
+  soldierName?: string;
+  slotId?: string;
+  reason: string;
+}
+
+export interface ConflictReport {
+  conflicts: Conflict[];
+  errorCount: number;
+  warningCount: number;
 }

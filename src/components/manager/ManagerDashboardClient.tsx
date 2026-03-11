@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { SoldierResponseTable } from '@/components/manager/SoldierResponseTable'
 import { MissingRespondersPanel } from '@/components/manager/MissingRespondersPanel';
 import { RecommendationBoard } from '@/components/board/RecommendationBoard';
 import type { Week, WeekSlot, Role, AvailabilitySubmission, WeekParticipant, ParticipantSummary, MissingResponder } from '@/db/types';
-import { STATUS_LABELS } from '@/db/types';
+import { STATUS_LABELS, getWeekDates } from '@/db/types';
 import { Copy, ExternalLink, Check, LayoutGrid, Table, RefreshCw, UserX } from 'lucide-react';
 
 interface ManagerDashboardClientProps {
@@ -38,7 +38,7 @@ export function ManagerDashboardClient({
   const [missing, setMissing] = useState(initialMissing);
   const [copied, setCopied] = useState(false);
 
-  const dates = [week.thursday_date, week.friday_date, week.saturday_date];
+  const dates = getWeekDates(week);
   const shareUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/week/${week.id}`
     : `/week/${week.id}`;
@@ -63,9 +63,9 @@ export function ManagerDashboardClient({
   }, [week.id]);
 
   const tabs = [
-    { key: 'responses' as const, label: 'Responses', icon: Table, count: summary.submitted },
-    { key: 'missing' as const, label: 'Missing', icon: UserX, count: summary.not_started },
-    { key: 'board' as const, label: 'Schedule Board', icon: LayoutGrid },
+    { key: 'responses' as const, label: 'תגובות', icon: Table, count: summary.submitted },
+    { key: 'missing' as const, label: 'חסרים', icon: UserX, count: summary.not_started },
+    { key: 'board' as const, label: 'לוח משמרות', icon: LayoutGrid },
   ];
 
   return (
@@ -85,7 +85,7 @@ export function ManagerDashboardClient({
                     {STATUS_LABELS[week.status]}
                   </Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">Manager Dashboard</p>
+                <p className="text-xs text-muted-foreground">לוח בקרה - מנהל</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -94,12 +94,12 @@ export function ManagerDashboardClient({
               </Button>
               <Button variant="outline" size="sm" onClick={copyLink}>
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copied ? 'Copied!' : 'Copy Link'}
+                {copied ? 'הועתק!' : 'העתק לינק'}
               </Button>
               <a href={`/week/${week.id}/schedule`} target="_blank">
                 <Button variant="ghost" size="sm">
                   <ExternalLink className="w-3.5 h-3.5" />
-                  Schedule
+                  לוח משמרות
                 </Button>
               </a>
             </div>
@@ -115,12 +115,12 @@ export function ManagerDashboardClient({
         <Card className="border-0 bg-primary/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm font-medium">Share link:</span>
-              <code className="text-xs bg-white px-3 py-1.5 rounded-lg border flex-1 min-w-0 truncate">
+              <span className="text-sm font-medium">לינק לשיתוף:</span>
+              <code className="text-xs bg-white px-3 py-1.5 rounded-lg border flex-1 min-w-0 truncate" dir="ltr">
                 {shareUrl}
               </code>
               <Button variant="outline" size="sm" onClick={copyLink}>
-                {copied ? 'Copied!' : 'Copy'}
+                {copied ? 'הועתק!' : 'העתק'}
               </Button>
             </div>
           </CardContent>
@@ -161,7 +161,7 @@ export function ManagerDashboardClient({
         {tab === 'responses' && (
           <Card>
             <CardHeader className="flex-row items-center justify-between">
-              <CardTitle className="text-base">All Participants</CardTitle>
+              <CardTitle className="text-base">כל המשתתפים</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <SoldierResponseTable

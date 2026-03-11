@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ weekId: string }> }
 ) {
   const { weekId } = await params;
-  return NextResponse.json(getSubmissionsForWeek(weekId));
+  return NextResponse.json(await getSubmissionsForWeek(weekId));
 }
 
 export async function POST(
@@ -23,23 +23,23 @@ export async function POST(
   const body = await req.json();
 
   // Check if soldier exists already; if not, they're reinforcement (external)
-  const existingSoldier = findSoldierByPersonalNumber(body.personal_number);
+  const existingSoldier = await findSoldierByPersonalNumber(body.personal_number);
 
   // Upsert soldier — new soldiers default to 'reinforcement'
-  const soldier = upsertSoldier({
+  const soldier = await upsertSoldier({
     first_name: body.first_name,
     last_name: body.last_name,
     personal_number: body.personal_number,
     phone: body.phone,
     car_number: body.car_number,
-    participant_type: existingSoldier?.participant_type, // keep existing type
+    participant_type: existingSoldier?.participant_type,
   });
 
   // Ensure they're registered as a participant for this week
-  ensureParticipant(weekId, soldier.id);
+  await ensureParticipant(weekId, soldier.id);
 
   // Upsert submission (also updates participant status)
-  const submission = upsertSubmission({
+  const submission = await upsertSubmission({
     week_id: weekId,
     soldier_id: soldier.id,
     constraints_text: body.constraints_text,

@@ -8,26 +8,28 @@ export const dynamic = 'force-dynamic';
 
 export default async function ManagerWeekPage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
-  getSampleWeekId(); // ensure seeded
+  await getSampleWeekId(); // ensure seeded
 
-  const week = getWeek(weekId);
+  const week = await getWeek(weekId);
   if (!week) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold">Week not found</h1>
-          <a href="/manager" className="text-primary underline text-sm mt-2 block">Back to weeks</a>
+          <h1 className="text-2xl font-semibold">שבוע לא נמצא</h1>
+          <a href="/manager" className="text-primary underline text-sm mt-2 block">חזור לשבועות</a>
         </div>
       </div>
     );
   }
 
-  const slots = getWeekSlots(weekId);
-  const roles = getAllRoles();
-  const submissions = getSubmissionsForWeek(weekId);
-  const participants = getWeekParticipants(weekId);
-  const summary = getParticipantSummary(weekId);
-  const missing = getMissingResponders(weekId);
+  const [slots, roles, submissions, participants, summary, missing] = await Promise.all([
+    getWeekSlots(weekId),
+    getAllRoles(),
+    getSubmissionsForWeek(weekId),
+    getWeekParticipants(weekId),
+    getParticipantSummary(weekId),
+    getMissingResponders(weekId),
+  ]);
 
   return (
     <ManagerDashboardClient

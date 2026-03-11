@@ -2,33 +2,33 @@ import { getSampleWeekId } from '@/db/store';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowRight, Calendar, Users, LayoutGrid, Smartphone } from 'lucide-react';
+import { ArrowLeft, Calendar, Users, LayoutGrid, Smartphone } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
-export default function HomePage() {
-  const weekId = getSampleWeekId();
+export default async function HomePage() {
+  const weekId = await getSampleWeekId();
 
   const features = [
     {
       icon: Calendar,
-      title: 'Weekly Planning',
-      desc: 'Create weekly schedules with flexible day/shift/role configuration.',
+      title: 'תכנון שבועי',
+      desc: 'צור לוח משמרות שבועי עם עמדות ומשמרות גמישות.',
     },
     {
       icon: Users,
-      title: 'Easy Submission',
-      desc: 'One shared link. Soldiers fill availability from their phone in seconds.',
+      title: 'הגשה קלה',
+      desc: 'לינק אחד משותף. החיילים ממלאים זמינות מהנייד תוך שניות.',
     },
     {
       icon: LayoutGrid,
-      title: 'Smart Board',
-      desc: 'Drag-and-drop scheduling with auto-recommendations. Like Jira for shifts.',
+      title: 'לוח חכם',
+      desc: 'גרירה ושחרור עם המלצות אוטומטיות. כמו ג\'ירה למשמרות.',
     },
     {
       icon: Smartphone,
-      title: 'Mobile Schedule',
-      desc: 'Final schedule visible on mobile. Screenshot-ready for WhatsApp.',
+      title: 'לוח משמרות לנייד',
+      desc: 'לוח משמרות סופי בנייד. מוכן לצילום מסך ושליחה בוואטסאפ.',
     },
   ];
 
@@ -44,7 +44,7 @@ export default function HomePage() {
             <span className="font-semibold text-lg tracking-tight">ShiftBoard</span>
           </div>
           <Link href="/manager">
-            <Button variant="ghost" size="sm">Manager Portal</Button>
+            <Button variant="ghost" size="sm">פורטל מנהל</Button>
           </Link>
         </div>
       </nav>
@@ -53,28 +53,28 @@ export default function HomePage() {
       <div className="max-w-5xl mx-auto px-4 pt-20 pb-16 text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          MVP — Reserve Duty Shift Scheduling
+          ניהול משמרות מילואים
         </div>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-balance max-w-2xl mx-auto leading-[1.15]">
-          Stop juggling spreadsheets.
+          תפסיקו לבזבז זמן על אקסלים.
           <br />
-          <span className="text-primary">Schedule smarter.</span>
+          <span className="text-primary">תנהלו משמרות חכם.</span>
         </h1>
         <p className="text-muted-foreground text-lg mt-4 max-w-xl mx-auto">
-          Replace your Google Form + Excel workflow with a single shared link,
-          smart recommendations, and a drag-and-drop board.
+          החליפו את הגוגל פורם + האקסל בלינק משותף אחד,
+          המלצות חכמות, ולוח גרירה ושחרור.
         </p>
 
         <div className="flex items-center justify-center gap-3 mt-8 flex-wrap">
           <Link href={`/week/${weekId}`}>
             <Button size="lg" className="gap-2">
-              Try Soldier Form
-              <ArrowRight className="w-4 h-4" />
+              נסה טופס חייל
+              <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
           <Link href={`/manager/week/${weekId}`}>
             <Button size="lg" variant="outline" className="gap-2">
-              Open Manager Dashboard
+              פתח לוח מנהל
             </Button>
           </Link>
         </div>
@@ -101,18 +101,18 @@ export default function HomePage() {
       <div className="max-w-5xl mx-auto px-4 pb-12">
         <div className="bg-white rounded-2xl border p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
-            <h3 className="font-semibold">Quick Demo Links</h3>
-            <p className="text-sm text-muted-foreground">Sample week is pre-seeded with 20 soldiers and 12 responses.</p>
+            <h3 className="font-semibold">קישורים מהירים</h3>
+            <p className="text-sm text-muted-foreground">שבוע לדוגמה עם 55 חיילים ו-32 תגובות.</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Link href={`/week/${weekId}`}>
-              <Button variant="outline" size="sm">Soldier Form</Button>
+              <Button variant="outline" size="sm">טופס חייל</Button>
             </Link>
             <Link href={`/manager/week/${weekId}`}>
-              <Button variant="outline" size="sm">Manager Dashboard</Button>
+              <Button variant="outline" size="sm">לוח מנהל</Button>
             </Link>
             <Link href={`/week/${weekId}/schedule`}>
-              <Button variant="outline" size="sm">Schedule View</Button>
+              <Button variant="outline" size="sm">לוח משמרות</Button>
             </Link>
           </div>
         </div>

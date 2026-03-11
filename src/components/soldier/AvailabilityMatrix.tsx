@@ -26,10 +26,10 @@ export function AvailabilityMatrix({ dates, value, onChange }: AvailabilityMatri
   return (
     <div className="space-y-1">
       <label className="text-sm font-medium text-foreground">
-        Availability
+        זמינות
       </label>
       <p className="text-xs text-muted-foreground mb-3">
-        Tap to toggle. Green = available, gray = off.
+        לחץ להחלפה. ירוק = זמין, אפור = לא זמין.
       </p>
 
       {/* Desktop: table view */}
@@ -38,7 +38,7 @@ export function AvailabilityMatrix({ dates, value, onChange }: AvailabilityMatri
           <table className="w-full">
             <thead>
               <tr className="bg-muted/50">
-                <th className="text-left text-xs font-medium text-muted-foreground p-3">Day</th>
+                <th className="text-right text-xs font-medium text-muted-foreground p-3">יום</th>
                 {SHIFT_ORDER.map(s => (
                   <th key={s} className="text-center text-xs font-medium text-muted-foreground p-3">
                     {getShiftEmoji(s)} {SHIFT_LABELS[s]}
@@ -64,7 +64,7 @@ export function AvailabilityMatrix({ dates, value, onChange }: AvailabilityMatri
                               : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                           )}
                         >
-                          {isAvail ? 'Available' : 'Off'}
+                          {isAvail ? 'זמין' : 'לא זמין'}
                         </button>
                       </td>
                     );
@@ -99,7 +99,7 @@ export function AvailabilityMatrix({ dates, value, onChange }: AvailabilityMatri
                     <span className="text-lg">{getShiftEmoji(shift)}</span>
                     <span>{SHIFT_LABELS[shift]}</span>
                     <span className="text-[10px] mt-0.5">
-                      {isAvail ? 'Available' : 'Off'}
+                      {isAvail ? 'זמין' : 'לא זמין'}
                     </span>
                   </button>
                 );

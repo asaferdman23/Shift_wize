@@ -14,12 +14,12 @@ export async function GET(
   const view = url.searchParams.get('view');
 
   if (view === 'summary') {
-    return NextResponse.json(getParticipantSummary(weekId));
+    return NextResponse.json(await getParticipantSummary(weekId));
   }
 
   if (view === 'missing') {
-    return NextResponse.json(getMissingResponders(weekId));
+    return NextResponse.json(await getMissingResponders(weekId));
   }
 
-  return NextResponse.json(getWeekParticipants(weekId));
+  return NextResponse.json(await getWeekParticipants(weekId));
 }

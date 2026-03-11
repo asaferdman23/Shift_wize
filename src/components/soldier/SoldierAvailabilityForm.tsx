@@ -10,13 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AvailabilityMatrix } from './AvailabilityMatrix';
 import type { ShiftType, Preference, Week } from '@/db/types';
+import { getWeekDates } from '@/db/types';
 import { CheckCircle, Loader2 } from 'lucide-react';
 
 const schema = z.object({
-  first_name: z.string().min(1, 'Required'),
-  last_name: z.string().min(1, 'Required'),
-  personal_number: z.string().min(5, 'Min 5 digits'),
-  phone: z.string().min(8, 'Valid phone required'),
+  first_name: z.string().min(1, 'שדה חובה'),
+  last_name: z.string().min(1, 'שדה חובה'),
+  personal_number: z.string().min(5, 'מינימום 5 ספרות'),
+  phone: z.string().min(8, 'מספר טלפון תקין'),
   car_number: z.string().optional(),
   constraints_text: z.string().optional(),
 });
@@ -28,7 +29,7 @@ interface SoldierAvailabilityFormProps {
 }
 
 export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) {
-  const dates = [week.thursday_date, week.friday_date, week.saturday_date];
+  const dates = getWeekDates(week);
 
   const [availability, setAvailability] = useState<Record<string, Record<ShiftType, Preference>>>(() => {
     const init: Record<string, Record<ShiftType, Preference>> = {};
@@ -56,7 +57,6 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
 
   const personalNumber = watch('personal_number');
 
-  // Lookup existing submission when personal number is entered
   useEffect(() => {
     if (!personalNumber || personalNumber.length < 5) {
       setLookupDone(false);
@@ -78,7 +78,6 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
           if (data.submission.constraints_text) {
             setValue('constraints_text', data.submission.constraints_text);
           }
-          // Restore availability entries
           if (data.submission.entries) {
             const restored: Record<string, Record<ShiftType, Preference>> = {};
             for (const d of dates) {
@@ -114,7 +113,7 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
       });
       setSubmitted(true);
     } catch {
-      alert('Error saving. Please try again.');
+      alert('שגיאה בשמירה. נסה שוב.');
     } finally {
       setLoading(false);
     }
@@ -129,17 +128,17 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
               <CheckCircle className="w-8 h-8 text-emerald-600" />
             </div>
             <h2 className="text-xl font-semibold">
-              {isUpdate ? 'Availability Updated!' : 'Availability Saved!'}
+              {isUpdate ? 'הזמינות עודכנה!' : 'הזמינות נשמרה!'}
             </h2>
             <p className="text-sm text-muted-foreground">
-              You can come back and update until scheduling closes.
+              אפשר לחזור ולעדכן עד שהשיבוץ ייסגר.
             </p>
             <Button
               variant="outline"
               onClick={() => setSubmitted(false)}
               className="mt-4"
             >
-              Edit Response
+              ערוך תגובה
             </Button>
           </CardContent>
         </Card>
@@ -166,9 +165,9 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         <div>
-          <h2 className="text-xl font-semibold">Submit Availability</h2>
+          <h2 className="text-xl font-semibold">הגשת זמינות</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Fill in your details and mark which shifts you can do.
+            מלא את הפרטים וסמן באילו משמרות אתה יכול.
           </p>
         </div>
 
@@ -177,19 +176,19 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
           <div className="relative">
             <Input
               id="personal_number"
-              label="Personal Number"
-              placeholder="e.g. 8001001"
+              label="מספר אישי"
+              placeholder="לדוגמה 8001001"
               {...register('personal_number')}
               error={errors.personal_number?.message}
             />
             {lookupLoading && (
-              <div className="absolute right-3 top-8">
+              <div className="absolute left-3 top-8">
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               </div>
             )}
             {isUpdate && lookupDone && (
               <p className="text-xs text-emerald-600 mt-1">
-                Found existing submission — your data has been loaded.
+                נמצאה הגשה קיימת — הנתונים שלך נטענו.
               </p>
             )}
           </div>
@@ -197,15 +196,15 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
           <div className="grid grid-cols-2 gap-3">
             <Input
               id="first_name"
-              label="First Name"
-              placeholder="Yossi"
+              label="שם פרטי"
+              placeholder="יוסי"
               {...register('first_name')}
               error={errors.first_name?.message}
             />
             <Input
               id="last_name"
-              label="Last Name"
-              placeholder="Cohen"
+              label="שם משפחה"
+              placeholder="כהן"
               {...register('last_name')}
               error={errors.last_name?.message}
             />
@@ -213,7 +212,7 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
 
           <Input
             id="phone"
-            label="Phone"
+            label="טלפון"
             placeholder="050-1234567"
             type="tel"
             {...register('phone')}
@@ -222,7 +221,7 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
 
           <Input
             id="car_number"
-            label="Car Number (optional)"
+            label="מספר רכב (אופציונלי)"
             placeholder="12-345-67"
             {...register('car_number')}
           />
@@ -237,8 +236,8 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
           {/* Constraints */}
           <Textarea
             id="constraints_text"
-            label="Special Constraints"
-            placeholder='e.g. "no night shifts", "no kitchen", "only available friday morning"'
+            label="אילוצים מיוחדים"
+            placeholder='לדוגמה: "לא לילות", "לא מטבח", "רק בוקר ביום שישי"'
             {...register('constraints_text')}
           />
 
@@ -246,9 +245,9 @@ export function SoldierAvailabilityForm({ week }: SoldierAvailabilityFormProps) 
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : isUpdate ? (
-              'Update Availability'
+              'עדכן זמינות'
             ) : (
-              'Submit Availability'
+              'שלח זמינות'
             )}
           </Button>
         </form>

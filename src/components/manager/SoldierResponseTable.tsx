@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import type { AvailabilitySubmission, WeekParticipant } from '@/db/types';
-import { SHIFT_ORDER } from '@/db/types';
+import { SHIFT_ORDER, PARTICIPANT_LABELS } from '@/db/types';
 import { formatDate, getShiftEmoji } from '@/lib/utils';
 import { Filter } from 'lucide-react';
 
@@ -19,10 +18,8 @@ interface SoldierResponseTableProps {
 export function SoldierResponseTable({ submissions, participants, dates }: SoldierResponseTableProps) {
   const [filter, setFilter] = useState<FilterType>('all');
 
-  // Build lookup: soldier_id -> submission
   const subMap = new Map(submissions.map(s => [s.soldier_id, s]));
 
-  // Build unified rows from all participants
   const rows = participants.map(p => {
     const sub = subMap.get(p.soldier_id);
     return {
@@ -33,9 +30,8 @@ export function SoldierResponseTable({ submissions, participants, dates }: Soldi
       hasConstraints: !!(sub?.constraints_text && sub.constraints_text.length > 0),
       isReinforcement: p.soldier?.participant_type === 'reinforcement',
     };
-  }).filter(r => r.soldier); // safety
+  }).filter(r => r.soldier);
 
-  // Apply filter
   const filtered = rows.filter(r => {
     if (filter === 'not_submitted') return !r.hasSubmitted;
     if (filter === 'reinforcement') return r.isReinforcement;
@@ -43,17 +39,16 @@ export function SoldierResponseTable({ submissions, participants, dates }: Soldi
     return true;
   });
 
-  // Sort: submitted first, then by name
   filtered.sort((a, b) => {
     if (a.hasSubmitted !== b.hasSubmitted) return a.hasSubmitted ? -1 : 1;
     return `${a.soldier.last_name}`.localeCompare(`${b.soldier.last_name}`);
   });
 
   const filters: { key: FilterType; label: string; count: number }[] = [
-    { key: 'all', label: 'All', count: rows.length },
-    { key: 'not_submitted', label: 'Not Submitted', count: rows.filter(r => !r.hasSubmitted).length },
-    { key: 'reinforcement', label: 'Reinforcement', count: rows.filter(r => r.isReinforcement).length },
-    { key: 'constraints', label: 'With Constraints', count: rows.filter(r => r.hasConstraints).length },
+    { key: 'all', label: 'הכל', count: rows.length },
+    { key: 'not_submitted', label: 'לא הגישו', count: rows.filter(r => !r.hasSubmitted).length },
+    { key: 'reinforcement', label: 'תגבור', count: rows.filter(r => r.isReinforcement).length },
+    { key: 'constraints', label: 'עם הגבלות', count: rows.filter(r => r.hasConstraints).length },
   ];
 
   return (
@@ -81,9 +76,9 @@ export function SoldierResponseTable({ submissions, participants, dates }: Soldi
 
       {filtered.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-medium">No matching results</p>
+          <p className="text-lg font-medium">אין תוצאות</p>
           <p className="text-sm mt-1">
-            {filter !== 'all' ? 'Try changing the filter.' : 'Share the link with your team to start collecting availability.'}
+            {filter !== 'all' ? 'נסה לשנות את הפילטר.' : 'שתף את הלינק עם הצוות כדי להתחיל לאסוף זמינות.'}
           </p>
         </div>
       ) : (
@@ -91,20 +86,20 @@ export function SoldierResponseTable({ submissions, participants, dates }: Soldi
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/30">
-                <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-white z-10">
-                  Soldier
+                <th className="text-right p-3 font-medium text-muted-foreground sticky right-0 bg-white z-10">
+                  חייל
                 </th>
-                <th className="text-center p-2 font-medium text-muted-foreground text-xs">Unit</th>
-                <th className="text-center p-2 font-medium text-muted-foreground text-xs">Status</th>
+                <th className="text-center p-2 font-medium text-muted-foreground text-xs">סוג</th>
+                <th className="text-center p-2 font-medium text-muted-foreground text-xs">סטטוס</th>
                 {dates.map(d => (
                   SHIFT_ORDER.map(s => (
                     <th key={`${d}-${s}`} className="text-center p-2 font-medium text-muted-foreground whitespace-nowrap text-xs">
-                      <div>{formatDate(d).split(' ')[0]}</div>
+                      <div>{formatDate(d).split(' ').slice(1).join(' ')}</div>
                       <div>{getShiftEmoji(s)}</div>
                     </th>
                   ))
                 ))}
-                <th className="text-left p-3 font-medium text-muted-foreground">Constraints</th>
+                <th className="text-right p-3 font-medium text-muted-foreground">הגבלות</th>
               </tr>
             </thead>
             <tbody>
@@ -115,7 +110,7 @@ export function SoldierResponseTable({ submissions, participants, dates }: Soldi
                     key={row.soldier.id}
                     className={`border-b hover:bg-muted/20 transition-colors ${!row.hasSubmitted ? 'bg-red-50/30' : ''}`}
                   >
-                    <td className="p-3 font-medium whitespace-nowrap sticky left-0 bg-white z-10">
+                    <td className="p-3 font-medium whitespace-nowrap sticky right-0 bg-white z-10">
                       <div>{name}</div>
                       <div className="text-xs text-muted-foreground">{row.soldier.personal_number}</div>
                     </td>
@@ -124,17 +119,17 @@ export function SoldierResponseTable({ submissions, participants, dates }: Soldi
                         variant={row.isReinforcement ? 'warning' : 'default'}
                         className="text-[10px]"
                       >
-                        {row.soldier.participant_type}
+                        {PARTICIPANT_LABELS[row.soldier.participant_type]}
                       </Badge>
                     </td>
                     <td className="text-center p-2">
                       {row.hasSubmitted ? (
                         <Badge variant="success" className="text-[10px]">
-                          {row.participant.response_status === 'updated' ? 'Updated' : 'Submitted'}
+                          {row.participant.response_status === 'updated' ? 'עודכן' : 'הוגש'}
                         </Badge>
                       ) : (
                         <Badge variant="destructive" className="text-[10px]">
-                          Missing
+                          חסר
                         </Badge>
                       )}
                     </td>

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShiftBoard — Smart Shift Scheduling",
-  description: "Mobile-first shift scheduling for reserve duty teams",
+  title: "ShiftBoard — ניהול משמרות חכם",
+  description: "מערכת ניהול משמרות למילואים",
 };
 
 export default function RootLayout({
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="min-h-screen">
+    <html lang="he" dir="rtl">
+      <body className="min-h-screen font-sans">
         {children}
       </body>
     </html>

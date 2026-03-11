@@ -6,9 +6,9 @@ export async function GET(
   { params }: { params: Promise<{ weekId: string }> }
 ) {
   const { weekId } = await params;
-  const week = getWeek(weekId);
+  const week = await getWeek(weekId);
   if (!week) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  const slots = getWeekSlots(weekId);
+  const slots = await getWeekSlots(weekId);
   return NextResponse.json({ ...week, slots });
 }
 
@@ -19,7 +19,7 @@ export async function PATCH(
   const { weekId } = await params;
   const body = await req.json();
   if (body.status) {
-    const updated = updateWeekStatus(weekId, body.status);
+    const updated = await updateWeekStatus(weekId, body.status);
     if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(updated);
   }

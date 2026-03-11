@@ -1,21 +1,19 @@
 import { getSampleWeekId, getWeek, getWeekSlots } from '@/db/store';
 import { SoldierAvailabilityForm } from '@/components/soldier/SoldierAvailabilityForm';
 
-// Ensure data is seeded
 export const dynamic = 'force-dynamic';
 
 export default async function SoldierWeekPage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
-  // Ensure seed
-  getSampleWeekId();
+  await getSampleWeekId();
 
-  const week = getWeek(weekId);
+  const week = await getWeek(weekId);
   if (!week) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Week not found</h1>
-          <p className="text-muted-foreground">This link may be invalid or expired.</p>
+          <h1 className="text-2xl font-semibold">שבוע לא נמצא</h1>
+          <p className="text-muted-foreground">הלינק עשוי להיות לא תקין או פג תוקף.</p>
         </div>
       </div>
     );
@@ -25,13 +23,13 @@ export default async function SoldierWeekPage({ params }: { params: Promise<{ we
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-semibold">Submissions Closed</h1>
+          <h1 className="text-2xl font-semibold">ההגשות נסגרו</h1>
           <p className="text-muted-foreground">
-            This week&apos;s availability form is no longer accepting responses.
+            טופס הזמינות לשבוע זה כבר לא מקבל תגובות.
           </p>
           {week.status === 'published' && (
             <a href={`/week/${weekId}/schedule`} className="text-primary underline text-sm">
-              View Published Schedule
+              צפה בלוח משמרות
             </a>
           )}
         </div>
@@ -39,7 +37,7 @@ export default async function SoldierWeekPage({ params }: { params: Promise<{ we
     );
   }
 
-  const slots = getWeekSlots(weekId);
+  const slots = await getWeekSlots(weekId);
 
   return <SoldierAvailabilityForm week={{ ...week, slots }} />;
 }

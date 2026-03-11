@@ -7,9 +7,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+  const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  return `יום ${days[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}`;
 }
 
 export function formatDateHebrew(dateStr: string): string {

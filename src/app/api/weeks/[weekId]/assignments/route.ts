@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ weekId: string }> }
 ) {
   const { weekId } = await params;
-  return NextResponse.json(getAssignmentsForWeek(weekId));
+  return NextResponse.json(await getAssignmentsForWeek(weekId));
 }
 
 export async function POST(
@@ -24,18 +24,21 @@ export async function POST(
 
   // Batch create (from recommendations)
   if (Array.isArray(body)) {
-    const results = body.map((item: any) =>
-      createAssignment({
-        week_id: weekId,
-        soldier_id: item.soldier_id,
-        week_slot_id: item.week_slot_id,
-        source: item.source || 'recommended',
-      })
-    );
+    const results = [];
+    for (const item of body) {
+      results.push(
+        await createAssignment({
+          week_id: weekId,
+          soldier_id: item.soldier_id,
+          week_slot_id: item.week_slot_id,
+          source: item.source || 'recommended',
+        })
+      );
+    }
     return NextResponse.json(results, { status: 201 });
   }
 
-  const assignment = createAssignment({
+  const assignment = await createAssignment({
     week_id: weekId,
     soldier_id: body.soldier_id,
     week_slot_id: body.week_slot_id,
@@ -50,7 +53,7 @@ export async function PATCH(
 ) {
   const body = await req.json();
   if (body.assignment_id && body.new_slot_id) {
-    const result = moveAssignment(body.assignment_id, body.new_slot_id);
+    const result = await moveAssignment(body.assignment_id, body.new_slot_id);
     if (!result) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(result);
   }
@@ -67,12 +70,12 @@ export async function DELETE(
   const clearAll = url.searchParams.get('clear');
 
   if (clearAll === 'true') {
-    clearAssignmentsForWeek(weekId);
+    await clearAssignmentsForWeek(weekId);
     return NextResponse.json({ ok: true });
   }
 
   if (assignmentId) {
-    deleteAssignment(assignmentId);
+    await deleteAssignment(assignmentId);
     return NextResponse.json({ ok: true });
   }
 

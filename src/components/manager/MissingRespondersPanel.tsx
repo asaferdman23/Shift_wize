@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { MissingResponder } from '@/db/types';
-import { Copy, Check, MessageCircle, Phone, User, ChevronDown, ChevronUp } from 'lucide-react';
+import { PARTICIPANT_LABELS } from '@/db/types';
+import { Check, MessageCircle, Phone, User, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MissingRespondersProps {
   missing: MissingResponder[];
@@ -26,12 +27,7 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
   };
 
   const missingNames = missing.map(m => `${m.soldier.first_name} ${m.soldier.last_name}`).join('\n');
-
-  const missingPhones = missing
-    .map(m => m.soldier.phone)
-    .filter(Boolean)
-    .join('\n');
-
+  const missingPhones = missing.map(m => m.soldier.phone).filter(Boolean).join('\n');
   const reminderText = `מי שעדיין לא מילא אילוצים לסופ״ש, למלא כאן:\n${shareUrl}`;
 
   const displayList = expanded ? missing : missing.slice(0, 8);
@@ -42,7 +38,7 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
         <CardContent className="p-4">
           <div className="flex items-center gap-2 text-emerald-700">
             <Check className="w-4 h-4" />
-            <span className="text-sm font-medium">All expected participants have responded!</span>
+            <span className="text-sm font-medium">כל המשתתפים הצפויים הגיבו!</span>
           </div>
         </CardContent>
       </Card>
@@ -54,7 +50,7 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">Missing Responders</CardTitle>
+            <CardTitle className="text-base">חסרי תגובה</CardTitle>
             <Badge variant="destructive" className="text-xs">{missing.length}</Badge>
           </div>
           <div className="flex items-center gap-1.5">
@@ -65,7 +61,7 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
               className="text-xs h-7"
             >
               {copied === 'names' ? <Check className="w-3 h-3" /> : <User className="w-3 h-3" />}
-              {copied === 'names' ? 'Copied!' : 'Names'}
+              {copied === 'names' ? 'הועתק!' : 'שמות'}
             </Button>
             <Button
               variant="outline"
@@ -74,7 +70,7 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
               className="text-xs h-7"
             >
               {copied === 'phones' ? <Check className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
-              {copied === 'phones' ? 'Copied!' : 'Phones'}
+              {copied === 'phones' ? 'הועתק!' : 'טלפונים'}
             </Button>
             <Button
               variant="default"
@@ -83,13 +79,13 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
               className="text-xs h-7 bg-emerald-600 hover:bg-emerald-700"
             >
               {copied === 'whatsapp' ? <Check className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
-              {copied === 'whatsapp' ? 'Copied!' : 'WhatsApp Reminder'}
+              {copied === 'whatsapp' ? 'הועתק!' : 'תזכורת וואטסאפ'}
             </Button>
           </div>
         </div>
         <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-          <span>{coreCount} core</span>
-          <span>{reinforcementCount} reinforcement</span>
+          <span>{coreCount} ליבה</span>
+          <span>{reinforcementCount} תגבור</span>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -97,10 +93,10 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-muted/30 text-xs">
-                <th className="text-left p-2.5 font-medium text-muted-foreground">Name</th>
-                <th className="text-left p-2.5 font-medium text-muted-foreground">Unit</th>
-                <th className="text-left p-2.5 font-medium text-muted-foreground">Phone</th>
-                <th className="text-left p-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="text-right p-2.5 font-medium text-muted-foreground">שם</th>
+                <th className="text-right p-2.5 font-medium text-muted-foreground">סוג</th>
+                <th className="text-right p-2.5 font-medium text-muted-foreground">טלפון</th>
+                <th className="text-right p-2.5 font-medium text-muted-foreground">סטטוס</th>
               </tr>
             </thead>
             <tbody>
@@ -117,13 +113,13 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
                       variant={m.participant_type === 'core' ? 'default' : 'secondary'}
                       className="text-[10px]"
                     >
-                      {m.participant_type}
+                      {PARTICIPANT_LABELS[m.participant_type]}
                     </Badge>
                   </td>
-                  <td className="p-2.5 text-xs text-muted-foreground">{m.soldier.phone}</td>
+                  <td className="p-2.5 text-xs text-muted-foreground" dir="ltr">{m.soldier.phone}</td>
                   <td className="p-2.5">
                     <Badge variant="destructive" className="text-[10px]">
-                      Not submitted
+                      לא הגיש
                     </Badge>
                   </td>
                 </tr>
@@ -137,9 +133,9 @@ export function MissingRespondersPanel({ missing, shareUrl }: MissingRespondersP
             className="flex items-center gap-1 text-xs text-primary hover:underline mt-2 mx-auto"
           >
             {expanded ? (
-              <>Show less <ChevronUp className="w-3 h-3" /></>
+              <>הצג פחות <ChevronUp className="w-3 h-3" /></>
             ) : (
-              <>Show all {missing.length} <ChevronDown className="w-3 h-3" /></>
+              <>הצג את כל {missing.length} <ChevronDown className="w-3 h-3" /></>
             )}
           </button>
         )}

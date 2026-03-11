@@ -1,260 +1,379 @@
 // ============================================================
-// In-Memory Database Store
-// For MVP: replaces Supabase with a simple in-memory store.
-// All operations are synchronous and data resets on server restart.
-// Structure mirrors the Supabase schema exactly for easy migration.
+// Supabase Database Store
+// Replaces in-memory store with persistent Supabase backend.
+// All operations are async.
 // ============================================================
 
-import { v4 as uuid } from 'uuid';
+import { supabase } from './supabase';
 import type {
   Week, Role, WeekSlot, Soldier, AvailabilitySubmission,
   AvailabilityEntry, Assignment, ShiftType, Preference, WeekStatus,
   ParticipantType, ResponseStatus, WeekParticipant, ParticipantSummary, MissingResponder,
 } from './types';
-
-// ---- Storage ----
-const weeks: Map<string, Week> = new Map();
-const roles: Map<string, Role> = new Map();
-const weekSlots: Map<string, WeekSlot> = new Map();
-const soldiers: Map<string, Soldier> = new Map();
-const submissions: Map<string, AvailabilitySubmission> = new Map();
-const entries: Map<string, AvailabilityEntry> = new Map();
-const assignments: Map<string, Assignment> = new Map();
-const weekParticipants: Map<string, WeekParticipant> = new Map();
+import { getWeekDates } from './types';
 
 // ---- Weeks ----
-export function getAllWeeks(): Week[] {
-  return Array.from(weeks.values()).sort((a, b) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+export async function getAllWeeks(): Promise<Week[]> {
+  const { data, error } = await supabase
+    .from('weeks')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
 }
 
-export function getWeek(id: string): Week | undefined {
-  return weeks.get(id);
+export async function getWeek(id: string): Promise<Week | undefined> {
+  const { data, error } = await supabase
+    .from('weeks')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
-export function createWeek(data: Omit<Week, 'id' | 'created_at'>): Week {
-  const week: Week = { ...data, id: uuid(), created_at: new Date().toISOString() };
-  weeks.set(week.id, week);
+export async function createWeek(data: Omit<Week, 'id' | 'created_at'>): Promise<Week> {
+  // Ensure dates array is populated
+  const dates = data.dates && data.dates.length > 0
+    ? data.dates
+    : [data.thursday_date, data.friday_date, data.saturday_date].filter(Boolean);
+
+  const row: Record<string, unknown> = {
+    title: data.title,
+    status: data.status,
+    dates,
+    // Legacy columns: use first/mid/last dates for backward compat
+    thursday_date: data.thursday_date || dates[0],
+    friday_date: data.friday_date || dates[Math.min(1, dates.length - 1)],
+    saturday_date: data.saturday_date || dates[dates.length - 1],
+  };
+
+  const { data: week, error } = await supabase
+    .from('weeks')
+    .insert(row)
+    .select()
+    .single();
+  if (error) throw error;
   return week;
 }
 
-export function updateWeekStatus(id: string, status: WeekStatus): Week | undefined {
-  const w = weeks.get(id);
-  if (!w) return undefined;
-  w.status = status;
-  return w;
+export async function updateWeekStatus(id: string, status: WeekStatus): Promise<Week | undefined> {
+  const { data, error } = await supabase
+    .from('weeks')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
 // ---- Roles ----
-export function getAllRoles(): Role[] {
-  return Array.from(roles.values());
+export async function getAllRoles(): Promise<Role[]> {
+  const { data, error } = await supabase
+    .from('roles')
+    .select('*');
+  if (error) throw error;
+  return data || [];
 }
 
-export function getRole(id: string): Role | undefined {
-  return roles.get(id);
+export async function getRole(id: string): Promise<Role | undefined> {
+  const { data, error } = await supabase
+    .from('roles')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
-export function createRole(name: string): Role {
-  const role: Role = { id: uuid(), name, created_at: new Date().toISOString() };
-  roles.set(role.id, role);
-  return role;
+export async function createRole(name: string): Promise<Role> {
+  const { data, error } = await supabase
+    .from('roles')
+    .insert({ name })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 // ---- Week Slots ----
-export function getWeekSlots(weekId: string): WeekSlot[] {
-  return Array.from(weekSlots.values())
-    .filter(s => s.week_id === weekId)
-    .map(s => ({ ...s, role: roles.get(s.role_id) }));
+export async function getWeekSlots(weekId: string): Promise<WeekSlot[]> {
+  const { data, error } = await supabase
+    .from('week_slots')
+    .select('*, role:roles(*)')
+    .eq('week_id', weekId);
+  if (error) throw error;
+  return data || [];
 }
 
-export function getWeekSlot(id: string): WeekSlot | undefined {
-  const s = weekSlots.get(id);
-  if (s) return { ...s, role: roles.get(s.role_id) };
-  return undefined;
+export async function getWeekSlot(id: string): Promise<WeekSlot | undefined> {
+  const { data, error } = await supabase
+    .from('week_slots')
+    .select('*, role:roles(*)')
+    .eq('id', id)
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
-export function createWeekSlot(data: Omit<WeekSlot, 'id' | 'created_at' | 'role'>): WeekSlot {
-  const slot: WeekSlot = { ...data, id: uuid(), created_at: new Date().toISOString() };
-  weekSlots.set(slot.id, slot);
-  return { ...slot, role: roles.get(slot.role_id) };
+export async function createWeekSlot(data: Omit<WeekSlot, 'id' | 'created_at' | 'role'>): Promise<WeekSlot> {
+  const { data: slot, error } = await supabase
+    .from('week_slots')
+    .insert({
+      week_id: data.week_id,
+      date: data.date,
+      shift_type: data.shift_type,
+      role_id: data.role_id,
+      required_count: data.required_count,
+    })
+    .select('*, role:roles(*)')
+    .single();
+  if (error) throw error;
+  return slot;
 }
 
 // ---- Soldiers ----
-export function getAllSoldiers(): Soldier[] {
-  return Array.from(soldiers.values());
+export async function getAllSoldiers(): Promise<Soldier[]> {
+  const { data, error } = await supabase
+    .from('soldiers')
+    .select('*');
+  if (error) throw error;
+  return data || [];
 }
 
-export function getSoldier(id: string): Soldier | undefined {
-  return soldiers.get(id);
+export async function getSoldier(id: string): Promise<Soldier | undefined> {
+  const { data, error } = await supabase
+    .from('soldiers')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
-export function findSoldierByPersonalNumber(pn: string): Soldier | undefined {
-  return Array.from(soldiers.values()).find(s => s.personal_number === pn);
+export async function findSoldierByPersonalNumber(pn: string): Promise<Soldier | undefined> {
+  const { data, error } = await supabase
+    .from('soldiers')
+    .select('*')
+    .eq('personal_number', pn)
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
-export function upsertSoldier(data: {
+export async function upsertSoldier(input: {
   first_name: string;
   last_name: string;
   personal_number: string;
   phone: string;
   car_number?: string;
   participant_type?: ParticipantType;
-}): Soldier {
-  const existing = findSoldierByPersonalNumber(data.personal_number);
+}): Promise<Soldier> {
+  const existing = await findSoldierByPersonalNumber(input.personal_number);
   if (existing) {
-    existing.first_name = data.first_name;
-    existing.last_name = data.last_name;
-    existing.phone = data.phone;
-    existing.car_number = data.car_number || existing.car_number;
-    // Only upgrade type if explicitly provided; never downgrade core → reinforcement
-    if (data.participant_type && existing.participant_type !== 'core') {
-      existing.participant_type = data.participant_type;
+    const updates: Record<string, unknown> = {
+      first_name: input.first_name,
+      last_name: input.last_name,
+      phone: input.phone,
+      updated_at: new Date().toISOString(),
+    };
+    if (input.car_number) updates.car_number = input.car_number;
+    if (input.participant_type && existing.participant_type !== 'core') {
+      updates.participant_type = input.participant_type;
     }
-    existing.updated_at = new Date().toISOString();
-    return existing;
+    const { data, error } = await supabase
+      .from('soldiers')
+      .update(updates)
+      .eq('id', existing.id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   }
-  const soldier: Soldier = {
-    ...data,
-    participant_type: data.participant_type || 'reinforcement',
-    id: uuid(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  soldiers.set(soldier.id, soldier);
-  return soldier;
+
+  const { data, error } = await supabase
+    .from('soldiers')
+    .insert({
+      first_name: input.first_name,
+      last_name: input.last_name,
+      personal_number: input.personal_number,
+      phone: input.phone,
+      car_number: input.car_number,
+      participant_type: input.participant_type || 'reinforcement',
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 // ---- Availability Submissions ----
-export function getSubmissionsForWeek(weekId: string): AvailabilitySubmission[] {
-  return Array.from(submissions.values())
-    .filter(s => s.week_id === weekId)
-    .map(s => ({
-      ...s,
-      soldier: soldiers.get(s.soldier_id),
-      entries: Array.from(entries.values()).filter(e => e.submission_id === s.id),
-    }));
+export async function getSubmissionsForWeek(weekId: string): Promise<AvailabilitySubmission[]> {
+  const { data: subs, error } = await supabase
+    .from('availability_submissions')
+    .select('*, soldier:soldiers(*), entries:availability_entries(*)')
+    .eq('week_id', weekId);
+  if (error) throw error;
+  return subs || [];
 }
 
-export function findSubmission(weekId: string, soldierId: string): AvailabilitySubmission | undefined {
-  const sub = Array.from(submissions.values())
-    .find(s => s.week_id === weekId && s.soldier_id === soldierId);
-  if (!sub) return undefined;
-  return {
-    ...sub,
-    soldier: soldiers.get(sub.soldier_id),
-    entries: Array.from(entries.values()).filter(e => e.submission_id === sub.id),
-  };
+export async function findSubmission(weekId: string, soldierId: string): Promise<AvailabilitySubmission | undefined> {
+  const { data, error } = await supabase
+    .from('availability_submissions')
+    .select('*, soldier:soldiers(*), entries:availability_entries(*)')
+    .eq('week_id', weekId)
+    .eq('soldier_id', soldierId)
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
-export function upsertSubmission(data: {
+export async function upsertSubmission(input: {
   week_id: string;
   soldier_id: string;
   constraints_text?: string;
   availability: Record<string, Record<ShiftType, Preference>>;
-}): AvailabilitySubmission {
-  // Find or create submission
-  let sub = Array.from(submissions.values())
-    .find(s => s.week_id === data.week_id && s.soldier_id === data.soldier_id);
+}): Promise<AvailabilitySubmission> {
+  const existing = await findSubmission(input.week_id, input.soldier_id);
+  const isUpdate = !!existing;
 
-  const isUpdate = !!sub;
+  let subId: string;
 
-  if (sub) {
-    sub.constraints_text = data.constraints_text;
-    sub.updated_at = new Date().toISOString();
-    // Remove old entries
-    for (const [eid, entry] of entries) {
-      if (entry.submission_id === sub.id) entries.delete(eid);
-    }
+  if (existing) {
+    // Update existing submission
+    const { error } = await supabase
+      .from('availability_submissions')
+      .update({
+        constraints_text: input.constraints_text,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id);
+    if (error) throw error;
+    subId = existing.id;
+
+    // Delete old entries
+    await supabase
+      .from('availability_entries')
+      .delete()
+      .eq('submission_id', existing.id);
   } else {
-    sub = {
-      id: uuid(),
-      week_id: data.week_id,
-      soldier_id: data.soldier_id,
-      constraints_text: data.constraints_text,
-      submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    submissions.set(sub.id, sub);
+    // Create new submission
+    const { data, error } = await supabase
+      .from('availability_submissions')
+      .insert({
+        week_id: input.week_id,
+        soldier_id: input.soldier_id,
+        constraints_text: input.constraints_text,
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    subId = data.id;
   }
 
-  // Create entries
-  for (const [date, shifts] of Object.entries(data.availability)) {
+  // Create new entries
+  const entryRows: Array<{
+    submission_id: string;
+    date: string;
+    shift_type: string;
+    preference: string;
+  }> = [];
+  for (const [date, shifts] of Object.entries(input.availability)) {
     for (const [shift, pref] of Object.entries(shifts)) {
-      const entry: AvailabilityEntry = {
-        id: uuid(),
-        submission_id: sub.id,
+      entryRows.push({
+        submission_id: subId,
         date,
-        shift_type: shift as ShiftType,
-        preference: pref as Preference,
-        created_at: new Date().toISOString(),
-      };
-      entries.set(entry.id, entry);
+        shift_type: shift,
+        preference: pref,
+      });
     }
   }
 
-  // Update participant status
-  ensureParticipant(data.week_id, data.soldier_id);
-  updateParticipantStatus(data.week_id, data.soldier_id, isUpdate ? 'updated' : 'submitted');
+  if (entryRows.length > 0) {
+    const { error } = await supabase
+      .from('availability_entries')
+      .insert(entryRows);
+    if (error) throw error;
+  }
 
-  return {
-    ...sub,
-    soldier: soldiers.get(sub.soldier_id),
-    entries: Array.from(entries.values()).filter(e => e.submission_id === sub.id),
-  };
+  // Ensure participant record and update status
+  await ensureParticipant(input.week_id, input.soldier_id);
+  await updateParticipantStatus(
+    input.week_id,
+    input.soldier_id,
+    isUpdate ? 'updated' : 'submitted'
+  );
+
+  // Return the full submission
+  const result = await findSubmission(input.week_id, input.soldier_id);
+  return result!;
 }
 
 // ---- Week Participants ----
-export function getWeekParticipants(weekId: string): WeekParticipant[] {
-  return Array.from(weekParticipants.values())
-    .filter(p => p.week_id === weekId)
-    .map(p => ({ ...p, soldier: soldiers.get(p.soldier_id) }));
+export async function getWeekParticipants(weekId: string): Promise<WeekParticipant[]> {
+  const { data, error } = await supabase
+    .from('week_participants')
+    .select('*, soldier:soldiers(*)')
+    .eq('week_id', weekId);
+  if (error) throw error;
+  return data || [];
 }
 
-export function addWeekParticipant(weekId: string, soldierId: string): WeekParticipant {
-  // Check if already exists
-  const existing = Array.from(weekParticipants.values())
-    .find(p => p.week_id === weekId && p.soldier_id === soldierId);
-  if (existing) return { ...existing, soldier: soldiers.get(existing.soldier_id) };
+export async function addWeekParticipant(weekId: string, soldierId: string): Promise<WeekParticipant> {
+  // Upsert to handle duplicates
+  const { data, error } = await supabase
+    .from('week_participants')
+    .upsert(
+      { week_id: weekId, soldier_id: soldierId, response_status: 'not_started' },
+      { onConflict: 'week_id,soldier_id', ignoreDuplicates: true }
+    )
+    .select('*, soldier:soldiers(*)')
+    .single();
+  if (error) {
+    // If upsert with ignoreDuplicates doesn't return data, fetch it
+    const { data: existing, error: e2 } = await supabase
+      .from('week_participants')
+      .select('*, soldier:soldiers(*)')
+      .eq('week_id', weekId)
+      .eq('soldier_id', soldierId)
+      .single();
+    if (e2) throw e2;
+    return existing;
+  }
+  return data;
+}
 
-  const p: WeekParticipant = {
-    id: uuid(),
+export async function addWeekParticipants(weekId: string, soldierIds: string[]): Promise<WeekParticipant[]> {
+  const rows = soldierIds.map(sid => ({
     week_id: weekId,
-    soldier_id: soldierId,
-    response_status: 'not_started',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  weekParticipants.set(p.id, p);
-  return { ...p, soldier: soldiers.get(soldierId) };
+    soldier_id: sid,
+    response_status: 'not_started' as const,
+  }));
+
+  const { error } = await supabase
+    .from('week_participants')
+    .upsert(rows, { onConflict: 'week_id,soldier_id', ignoreDuplicates: true });
+  if (error) throw error;
+
+  return getWeekParticipants(weekId);
 }
 
-export function addWeekParticipants(weekId: string, soldierIds: string[]): WeekParticipant[] {
-  return soldierIds.map(sid => addWeekParticipant(weekId, sid));
+export async function updateParticipantStatus(weekId: string, soldierId: string, status: ResponseStatus): Promise<void> {
+  await supabase
+    .from('week_participants')
+    .update({ response_status: status, updated_at: new Date().toISOString() })
+    .eq('week_id', weekId)
+    .eq('soldier_id', soldierId);
 }
 
-export function updateParticipantStatus(weekId: string, soldierId: string, status: ResponseStatus): void {
-  const p = Array.from(weekParticipants.values())
-    .find(wp => wp.week_id === weekId && wp.soldier_id === soldierId);
-  if (p) {
-    p.response_status = status;
-    p.updated_at = new Date().toISOString();
-  }
+export async function ensureParticipant(weekId: string, soldierId: string): Promise<void> {
+  await addWeekParticipant(weekId, soldierId);
 }
 
-/** Ensure external soldier who fills form gets a participant record */
-export function ensureParticipant(weekId: string, soldierId: string): void {
-  const exists = Array.from(weekParticipants.values())
-    .some(p => p.week_id === weekId && p.soldier_id === soldierId);
-  if (!exists) {
-    addWeekParticipant(weekId, soldierId);
-  }
-}
-
-export function getParticipantSummary(weekId: string): ParticipantSummary {
-  const participants = getWeekParticipants(weekId);
-  const subs = getSubmissionsForWeek(weekId);
-  const subSoldierIds = new Set(subs.map(s => s.soldier_id));
+export async function getParticipantSummary(weekId: string): Promise<ParticipantSummary> {
+  const participants = await getWeekParticipants(weekId);
+  const subs = await getSubmissionsForWeek(weekId);
   const withConstraints = subs.filter(s => s.constraints_text && s.constraints_text.length > 0).length;
 
   let totalCore = 0;
@@ -277,117 +396,160 @@ export function getParticipantSummary(weekId: string): ParticipantSummary {
     total_expected: participants.length,
     total_core: totalCore,
     total_reinforcement: totalReinforcement,
-    submitted: submitted + updated, // combined "responded"
+    submitted: submitted + updated,
     updated,
     not_started: notStarted,
     with_constraints: withConstraints,
   };
 }
 
-export function getMissingResponders(weekId: string): MissingResponder[] {
-  const participants = getWeekParticipants(weekId);
+export async function getMissingResponders(weekId: string): Promise<MissingResponder[]> {
+  const participants = await getWeekParticipants(weekId);
   return participants
     .filter(p => p.response_status === 'not_started')
     .map(p => ({
       soldier: p.soldier!,
-      participant_type: p.soldier?.participant_type || 'core',
+      participant_type: p.soldier?.participant_type || ('core' as ParticipantType),
       response_status: p.response_status,
       last_update: undefined,
     }))
-    .filter(m => m.soldier); // safety
+    .filter(m => m.soldier);
 }
 
-export function getRespondedParticipants(weekId: string): WeekParticipant[] {
-  return getWeekParticipants(weekId)
-    .filter(p => p.response_status === 'submitted' || p.response_status === 'updated');
+export async function getRespondedParticipants(weekId: string): Promise<WeekParticipant[]> {
+  const { data, error } = await supabase
+    .from('week_participants')
+    .select('*, soldier:soldiers(*)')
+    .eq('week_id', weekId)
+    .in('response_status', ['submitted', 'updated']);
+  if (error) throw error;
+  return data || [];
 }
 
 // ---- Assignments ----
-export function getAssignmentsForWeek(weekId: string): Assignment[] {
-  return Array.from(assignments.values())
-    .filter(a => a.week_id === weekId)
-    .map(a => ({
-      ...a,
-      soldier: soldiers.get(a.soldier_id),
-      week_slot: getWeekSlot(a.week_slot_id),
-    }));
+export async function getAssignmentsForWeek(weekId: string): Promise<Assignment[]> {
+  const { data, error } = await supabase
+    .from('assignments')
+    .select('*, soldier:soldiers(*), week_slot:week_slots(*, role:roles(*))')
+    .eq('week_id', weekId);
+  if (error) throw error;
+  return data || [];
 }
 
-export function createAssignment(data: {
+export async function createAssignment(data: {
   week_id: string;
   soldier_id: string;
   week_slot_id: string;
   source: 'manual' | 'recommended';
-}): Assignment {
-  const assignment: Assignment = {
-    ...data,
-    id: uuid(),
-    created_at: new Date().toISOString(),
-  };
-  assignments.set(assignment.id, assignment);
-  return {
-    ...assignment,
-    soldier: soldiers.get(data.soldier_id),
-    week_slot: getWeekSlot(data.week_slot_id),
-  };
+}): Promise<Assignment> {
+  const { data: assignment, error } = await supabase
+    .from('assignments')
+    .insert(data)
+    .select('*, soldier:soldiers(*), week_slot:week_slots(*, role:roles(*))')
+    .single();
+  if (error) throw error;
+  return assignment;
 }
 
-export function deleteAssignment(id: string): boolean {
-  return assignments.delete(id);
+export async function deleteAssignment(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('assignments')
+    .delete()
+    .eq('id', id);
+  return !error;
 }
 
-export function clearAssignmentsForWeek(weekId: string): void {
-  for (const [aid, a] of assignments) {
-    if (a.week_id === weekId) assignments.delete(aid);
-  }
+export async function clearAssignmentsForWeek(weekId: string): Promise<void> {
+  const { error } = await supabase
+    .from('assignments')
+    .delete()
+    .eq('week_id', weekId);
+  if (error) throw error;
 }
 
-export function moveAssignment(assignmentId: string, newSlotId: string): Assignment | undefined {
-  const a = assignments.get(assignmentId);
-  if (!a) return undefined;
-  a.week_slot_id = newSlotId;
-  a.source = 'manual';
-  return { ...a, soldier: soldiers.get(a.soldier_id), week_slot: getWeekSlot(newSlotId) };
+export async function moveAssignment(assignmentId: string, newSlotId: string): Promise<Assignment | undefined> {
+  const { data, error } = await supabase
+    .from('assignments')
+    .update({ week_slot_id: newSlotId, source: 'manual' })
+    .eq('id', assignmentId)
+    .select('*, soldier:soldiers(*), week_slot:week_slots(*, role:roles(*))')
+    .single();
+  if (error) return undefined;
+  return data;
 }
 
 // ---- Seed Data ----
-export function seedDatabase(): string {
+
+// Real slot requirements per shift type per role
+interface SlotRequirement {
+  roleName: string;
+  morning: number;
+  noon: number;
+  night: number;
+}
+
+const SLOT_REQUIREMENTS: SlotRequirement[] = [
+  { roleName: 'יולדות',                        morning: 4, noon: 3, night: 3 },
+  { roleName: 'מטבח',                          morning: 3, noon: 3, night: 2 },
+  { roleName: 'מכון הלב',                      morning: 2, noon: 2, night: 2 },
+  { roleName: 'מסר',                           morning: 1, noon: 1, night: 1 },
+  { roleName: 'מעלית שיקום',                    morning: 3, noon: 1, night: 0 },
+  { roleName: 'סדרן חניה + מעלית שיקום',        morning: 2, noon: 0, night: 0 },
+  { roleName: 'צירים',                         morning: 1, noon: 0, night: 0 },
+  { roleName: 'שינוע דמים',                     morning: 2, noon: 0, night: 2 },
+  { roleName: 'שיקום',                         morning: 1, noon: 0, night: 1 },
+];
+
+export async function seedDatabase(): Promise<string> {
   // Check if already seeded
-  if (weeks.size > 0) {
-    return Array.from(weeks.values())[0].id;
+  const existingWeeks = await getAllWeeks();
+  if (existingWeeks.length > 0) {
+    return existingWeeks[0].id;
   }
 
-  // Roles
-  const roleNames = ['Kitchen', 'Children', 'Orderly', 'Rehab Elevator', 'Blood Transport'];
-  const seededRoles = roleNames.map(name => createRole(name));
+  // Use existing roles from DB (already inserted via migration)
+  let existingRoles = await getAllRoles();
+  if (existingRoles.length === 0) {
+    // Fallback: create roles if not present
+    for (const req of SLOT_REQUIREMENTS) {
+      await createRole(req.roleName);
+    }
+    existingRoles = await getAllRoles();
+  }
+  const roleByName = new Map(existingRoles.map(r => [r.name, r]));
 
   // Week
-  const week = createWeek({
-    title: '13-15.3 Weekend',
-    thursday_date: '2025-03-13',
-    friday_date: '2025-03-14',
-    saturday_date: '2025-03-15',
+  const week = await createWeek({
+    title: 'סופ"ש 12-14.3',
+    thursday_date: '2026-03-12',
+    friday_date: '2026-03-13',
+    saturday_date: '2026-03-14',
+    dates: ['2026-03-12', '2026-03-13', '2026-03-14'],
     status: 'open',
   });
 
-  // Create slots for each day × shift × role
-  const dates = [week.thursday_date, week.friday_date, week.saturday_date];
+  // Create slots with correct per-role per-shift requirements
+  const dates = getWeekDates(week);
   const shifts: ShiftType[] = ['morning', 'noon', 'night'];
   for (const date of dates) {
     for (const shift of shifts) {
-      for (const role of seededRoles) {
-        createWeekSlot({
+      for (const req of SLOT_REQUIREMENTS) {
+        const role = roleByName.get(req.roleName);
+        if (!role) continue;
+        const count = req[shift];
+        if (count <= 0) continue;
+        await createWeekSlot({
           week_id: week.id,
           date,
           shift_type: shift,
           role_id: role.id,
-          required_count: shift === 'night' ? 1 : 2,
+          required_count: count,
         });
       }
     }
   }
 
-  // ---- Core Soldiers (40) ----
+  // Core Soldiers (40)
   const coreSoldierData = [
     { first_name: 'Yossi', last_name: 'Cohen', personal_number: '8001001', phone: '050-1111111' },
     { first_name: 'David', last_name: 'Levi', personal_number: '8001002', phone: '050-2222222' },
@@ -431,7 +593,6 @@ export function seedDatabase(): string {
     { first_name: 'Erez', last_name: 'Golan', personal_number: '8001040', phone: '050-4040401' },
   ];
 
-  // ---- Reinforcement Soldiers (15) ----
   const reinforcementData = [
     { first_name: 'Maya', last_name: 'Abergel', personal_number: '9001001', phone: '052-5010101' },
     { first_name: 'Chen', last_name: 'Vaknin', personal_number: '9001002', phone: '052-5020201' },
@@ -450,14 +611,20 @@ export function seedDatabase(): string {
     { first_name: 'Magen', last_name: 'Levi', personal_number: '9001015', phone: '052-5151501' },
   ];
 
-  const seededCoreSoldiers = coreSoldierData.map(s => upsertSoldier({ ...s, participant_type: 'core' }));
-  const seededReinforcementSoldiers = reinforcementData.map(s => upsertSoldier({ ...s, participant_type: 'reinforcement' }));
+  const seededCoreSoldiers: Soldier[] = [];
+  for (const s of coreSoldierData) {
+    seededCoreSoldiers.push(await upsertSoldier({ ...s, participant_type: 'core' }));
+  }
+  const seededReinforcementSoldiers: Soldier[] = [];
+  for (const s of reinforcementData) {
+    seededReinforcementSoldiers.push(await upsertSoldier({ ...s, participant_type: 'reinforcement' }));
+  }
   const allSeededSoldiers = [...seededCoreSoldiers, ...seededReinforcementSoldiers];
 
-  // Register ALL as expected participants for this week
-  addWeekParticipants(week.id, allSeededSoldiers.map(s => s.id));
+  // Register ALL as expected participants
+  await addWeekParticipants(week.id, allSeededSoldiers.map(s => s.id));
 
-  // Create submissions for ~30 out of 55 (realistic response rate)
+  // Create submissions for ~32 soldiers
   const constraintsOptions = [
     undefined,
     'no night shifts please',
@@ -473,18 +640,20 @@ export function seedDatabase(): string {
     'not friday night',
   ];
 
+  const dates2 = getWeekDates(week);
+
   // 25 core soldiers responded
   for (let i = 0; i < 25; i++) {
     const soldier = seededCoreSoldiers[i];
     const avail: Record<string, Record<ShiftType, Preference>> = {};
-    for (const date of dates) {
+    for (const date of dates2) {
       avail[date] = {
         morning: Math.random() > 0.3 ? 'available' : 'off',
         noon: Math.random() > 0.4 ? 'available' : 'off',
         night: Math.random() > 0.5 ? 'available' : 'off',
       };
     }
-    upsertSubmission({
+    await upsertSubmission({
       week_id: week.id,
       soldier_id: soldier.id,
       constraints_text: constraintsOptions[i % constraintsOptions.length],
@@ -496,14 +665,14 @@ export function seedDatabase(): string {
   for (let i = 0; i < 7; i++) {
     const soldier = seededReinforcementSoldiers[i];
     const avail: Record<string, Record<ShiftType, Preference>> = {};
-    for (const date of dates) {
+    for (const date of dates2) {
       avail[date] = {
         morning: Math.random() > 0.25 ? 'available' : 'off',
         noon: Math.random() > 0.35 ? 'available' : 'off',
         night: Math.random() > 0.55 ? 'available' : 'off',
       };
     }
-    upsertSubmission({
+    await upsertSubmission({
       week_id: week.id,
       soldier_id: soldier.id,
       constraints_text: constraintsOptions[(i + 3) % constraintsOptions.length],
@@ -514,11 +683,8 @@ export function seedDatabase(): string {
   return week.id;
 }
 
-// Auto-seed on import
-let _sampleWeekId: string | null = null;
-export function getSampleWeekId(): string {
-  if (!_sampleWeekId) {
-    _sampleWeekId = seedDatabase();
-  }
-  return _sampleWeekId;
+export async function getSampleWeekId(): Promise<string> {
+  const weeks = await getAllWeeks();
+  if (weeks.length > 0) return weeks[0].id;
+  return seedDatabase();
 }

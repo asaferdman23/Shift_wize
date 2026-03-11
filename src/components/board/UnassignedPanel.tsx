@@ -43,14 +43,14 @@ export function UnassignedPanel({
     >
       <div className="p-3 border-b">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-sm">Unassigned</h3>
+          <h3 className="font-semibold text-sm">לא שובצו</h3>
           <Badge variant="outline">{soldiers.length}</Badge>
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-muted-foreground" />
           <input
             className="w-full h-9 pl-8 pr-3 rounded-lg border text-sm bg-muted/30 focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Search soldiers..."
+            placeholder="חפש חייל..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -72,7 +72,7 @@ export function UnassignedPanel({
           ))}
           {filtered.length === 0 && (
             <div className="text-center py-6 text-sm text-muted-foreground">
-              {soldiers.length === 0 ? 'All soldiers assigned!' : 'No matches found'}
+              {soldiers.length === 0 ? 'כל החיילים שובצו!' : 'לא נמצאו תוצאות'}
             </div>
           )}
         </div>

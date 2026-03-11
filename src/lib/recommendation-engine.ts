@@ -10,13 +10,10 @@ import type {
   UnfilledSlot,
   ShiftType,
   AvailabilitySubmission,
+  WeekSlot,
+  Assignment,
+  Role,
 } from '@/db/types';
-import {
-  getWeekSlots,
-  getSubmissionsForWeek,
-  getAssignmentsForWeek,
-  getAllRoles,
-} from '@/db/store';
 
 interface ConstraintFlags {
   noNight: boolean;
@@ -46,12 +43,12 @@ function getDayName(dateStr: string): string {
   return ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][d.getDay()];
 }
 
-export function generateRecommendations(weekId: string): RecommendationResult {
-  const slots = getWeekSlots(weekId);
-  const subs = getSubmissionsForWeek(weekId);
-  const existingAssignments = getAssignmentsForWeek(weekId);
-  const roles = getAllRoles();
-
+export function generateRecommendations(
+  slots: WeekSlot[],
+  subs: AvailabilitySubmission[],
+  existingAssignments: Assignment[],
+  roles: Role[],
+): RecommendationResult {
   const roleMap = new Map(roles.map(r => [r.id, r.name]));
   const warnings: RecommendationWarning[] = [];
   const recommended: RecommendedAssignment[] = [];
@@ -74,12 +71,6 @@ export function generateRecommendations(weekId: string): RecommendationResult {
   const slotFillCount = new Map<string, number>();
   for (const a of existingAssignments) {
     slotFillCount.set(a.week_slot_id, (slotFillCount.get(a.week_slot_id) || 0) + 1);
-  }
-
-  // Build submission lookup: soldier_id -> submission
-  const subMap = new Map<string, AvailabilitySubmission>();
-  for (const sub of subs) {
-    subMap.set(sub.soldier_id, sub);
   }
 
   // Sort slots by priority: night shifts first (harder to fill), then by date
@@ -130,33 +121,20 @@ export function generateRecommendations(weekId: string): RecommendationResult {
         e => e.date === slot.date && e.shift_type === slot.shift_type
       );
       if (!entry || entry.preference === 'off') {
-        continue; // Skip silently - they're not available
+        continue;
       }
 
       // Rule 2: Check constraint keywords
-      if (constraints.noNight && slot.shift_type === 'night') {
-        continue;
-      }
-      if (constraints.noKitchen && roleName.toLowerCase().includes('kitchen')) {
-        continue;
-      }
-      if (constraints.noFriday && dayName === 'friday') {
-        continue;
-      }
-      if (constraints.noSaturday && dayName === 'saturday') {
-        continue;
-      }
-      if (constraints.noThursday && dayName === 'thursday') {
-        continue;
-      }
+      if (constraints.noNight && slot.shift_type === 'night') continue;
+      if (constraints.noKitchen && roleName.toLowerCase().includes('kitchen')) continue;
+      if (constraints.noFriday && dayName === 'friday') continue;
+      if (constraints.noSaturday && dayName === 'saturday') continue;
+      if (constraints.noThursday && dayName === 'thursday') continue;
 
       // Rule 3: Avoid assigning same soldier twice on same day
       const dayMap = soldierDayAssignments.get(soldierId) || new Map();
       const dayCount = dayMap.get(slot.date) || 0;
-      if (dayCount >= 1) {
-        // Already has an assignment this day - skip unless no other candidates
-        continue;
-      }
+      if (dayCount >= 1) continue;
 
       // Rule 4: Check not already assigned to another slot at same time
       const sameTimeAssigned = [...existingAssignments, ...recommended.map(r => ({

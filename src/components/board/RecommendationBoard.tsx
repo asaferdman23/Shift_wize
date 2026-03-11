@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -16,9 +16,10 @@ import { ShiftColumn } from './ShiftColumn';
 import { UnassignedPanel } from './UnassignedPanel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { Week, WeekSlot, Role, Assignment, Soldier, AvailabilitySubmission, ShiftType } from '@/db/types';
-import { SHIFT_ORDER } from '@/db/types';
-import { Wand2, Loader2, Trash2, GripVertical } from 'lucide-react';
+import type { Week, WeekSlot, Role, Assignment, Soldier, AvailabilitySubmission, ConflictReport } from '@/db/types';
+import { SHIFT_ORDER, getWeekDates } from '@/db/types';
+import { Wand2, Loader2, Trash2, GripVertical, AlertTriangle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { detectConflicts, getSlotConflicts, getAssignmentConflicts } from '@/lib/conflict-detector';
 
 interface RecommendationBoardProps {
   week: Week;
@@ -39,6 +40,8 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
   );
 
   // Build helper maps
+  const roleMap = useMemo(() => new Map(roles.map(r => [r.id, r.name])), [roles]);
+
   const constraintsMap = new Map<string, string>();
   submissions.forEach(s => {
     if (s.constraints_text) constraintsMap.set(s.soldier_id, s.constraints_text);
@@ -48,6 +51,12 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
   assignments.forEach(a => {
     assignmentCountMap.set(a.soldier_id, (assignmentCountMap.get(a.soldier_id) || 0) + 1);
   });
+
+  // Conflict detection
+  const conflictReport: ConflictReport = useMemo(() => {
+    if (assignments.length === 0) return { conflicts: [], errorCount: 0, warningCount: 0 };
+    return detectConflicts(assignments, slots, submissions, roleMap);
+  }, [assignments, slots, submissions, roleMap]);
 
   // Soldiers who submitted availability
   const submittedSoldiers = submissions
@@ -72,8 +81,8 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
 
   useEffect(() => { fetchAssignments(); }, [fetchAssignments]);
 
-  // Generate recommendations
-  const handleGenerate = async () => {
+  // Auto Fill Schedule
+  const handleAutoFill = async () => {
     setGenerating(true);
     try {
       // Clear existing
@@ -106,7 +115,7 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
 
   // Clear all
   const handleClear = async () => {
-    if (!confirm('Clear all assignments?')) return;
+    if (!confirm('למחוק את כל השיבוצים?')) return;
     await fetch(`/api/weeks/${week.id}/assignments?clear=true`, { method: 'DELETE' });
     setAssignments([]);
   };
@@ -130,7 +139,6 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
     const activeIdStr = active.id as string;
     const overIdStr = over.id as string;
 
-    // Determine what was dragged and where
     const isFromUnassigned = activeIdStr.startsWith('soldier-');
     const soldierId = isFromUnassigned
       ? activeIdStr.replace('soldier-', '')
@@ -138,14 +146,10 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
 
     if (!soldierId) return;
 
-    // Find target slot - the over ID could be a slot ID or another assignment
     const targetSlotId = overIdStr;
-    // If dropped on a slot (droppable), use it directly
     const isSlot = slots.some(s => s.id === targetSlotId);
     if (!isSlot) {
-      // Maybe dropped on unassigned
       if (targetSlotId === 'unassigned') {
-        // Remove from assignment
         if (!isFromUnassigned) {
           handleRemove(activeIdStr);
         }
@@ -155,7 +159,6 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
     }
 
     if (isFromUnassigned) {
-      // Create new assignment
       const res = await fetch(`/api/weeks/${week.id}/assignments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -168,7 +171,6 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
       const newAssignment = await res.json();
       setAssignments(prev => [...prev, newAssignment]);
     } else {
-      // Move existing assignment
       const res = await fetch(`/api/weeks/${week.id}/assignments`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -191,24 +193,62 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
       : assignments.find(a => a.id === activeId)?.soldier
     : null;
 
-  const dates = [week.thursday_date, week.friday_date, week.saturday_date];
+  const dates = getWeekDates(week);
 
   return (
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Button onClick={handleGenerate} disabled={generating}>
+        <Button
+          onClick={handleAutoFill}
+          disabled={generating}
+          className="bg-primary hover:bg-primary/90"
+        >
           {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-          Generate Recommendations
+          מילוי אוטומטי
         </Button>
         <Button variant="outline" onClick={handleClear} disabled={assignments.length === 0}>
           <Trash2 className="w-4 h-4" />
-          Clear All
+          נקה הכל
         </Button>
         <Badge variant="outline" className="text-xs">
-          {assignments.length} assignments
+          {assignments.length} שיבוצים
         </Badge>
       </div>
+
+      {/* Conflict summary bar */}
+      {assignments.length > 0 && (
+        <div className={`flex items-center gap-4 px-4 py-3 rounded-lg border ${
+          conflictReport.errorCount > 0
+            ? 'bg-red-50 border-red-200'
+            : conflictReport.warningCount > 0
+            ? 'bg-amber-50 border-amber-200'
+            : 'bg-emerald-50 border-emerald-200'
+        }`}>
+          {conflictReport.errorCount > 0 ? (
+            <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          ) : conflictReport.warningCount > 0 ? (
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+          )}
+          <div className="flex items-center gap-3 text-sm flex-wrap">
+            {conflictReport.errorCount > 0 && (
+              <span className="text-red-700 font-medium">
+                {conflictReport.errorCount} שגיאות
+              </span>
+            )}
+            {conflictReport.warningCount > 0 && (
+              <span className="text-amber-700 font-medium">
+                {conflictReport.warningCount} אזהרות
+              </span>
+            )}
+            {conflictReport.errorCount === 0 && conflictReport.warningCount === 0 && (
+              <span className="text-emerald-700 font-medium">אין התנגשויות</span>
+            )}
+          </div>
+        </div>
+      )}
 
       <DndContext
         sensors={sensors}
@@ -247,6 +287,7 @@ export function RecommendationBoard({ week, slots, roles, submissions }: Recomme
                       constraintsMap={constraintsMap}
                       assignmentCountMap={assignmentCountMap}
                       onRemoveAssignment={handleRemove}
+                      conflictReport={conflictReport}
                     />
                   );
                 })

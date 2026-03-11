@@ -2,9 +2,10 @@
 
 import { RoleLane } from './RoleLane';
 import { Badge } from '@/components/ui/badge';
-import type { Role, Assignment, WeekSlot } from '@/db/types';
+import type { Role, Assignment, WeekSlot, ConflictReport } from '@/db/types';
 import { SHIFT_LABELS } from '@/db/types';
 import { formatDate, getShiftEmoji } from '@/lib/utils';
+import { getSlotConflicts } from '@/lib/conflict-detector';
 
 interface ShiftColumnProps {
   date: string;
@@ -15,6 +16,7 @@ interface ShiftColumnProps {
   constraintsMap: Map<string, string>;
   assignmentCountMap: Map<string, number>;
   onRemoveAssignment: (id: string) => void;
+  conflictReport: ConflictReport;
 }
 
 export function ShiftColumn({
@@ -26,14 +28,27 @@ export function ShiftColumn({
   constraintsMap,
   assignmentCountMap,
   onRemoveAssignment,
+  conflictReport,
 }: ShiftColumnProps) {
   const totalRequired = slots.reduce((s, sl) => s + sl.required_count, 0);
   const totalFilled = assignments.length;
 
+  // Check if any slot in this column has conflicts
+  const columnHasErrors = slots.some(s =>
+    getSlotConflicts(conflictReport, s.id).some(c => c.severity === 'error')
+  );
+  const columnHasWarnings = slots.some(s =>
+    getSlotConflicts(conflictReport, s.id).some(c => c.severity === 'warning')
+  );
+
   return (
-    <div className="bg-white rounded-xl border shadow-sm min-w-[220px] flex-shrink-0">
+    <div className={`bg-white rounded-xl border shadow-sm min-w-[220px] flex-shrink-0 ${
+      columnHasErrors ? 'border-red-300' : columnHasWarnings ? 'border-amber-300' : ''
+    }`}>
       {/* Column header */}
-      <div className="p-3 border-b bg-muted/20 rounded-t-xl">
+      <div className={`p-3 border-b rounded-t-xl ${
+        columnHasErrors ? 'bg-red-50/50' : columnHasWarnings ? 'bg-amber-50/50' : 'bg-muted/20'
+      }`}>
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs text-muted-foreground">{formatDate(date)}</div>
@@ -67,6 +82,7 @@ export function ShiftColumn({
               constraintsMap={constraintsMap}
               assignmentCountMap={assignmentCountMap}
               onRemoveAssignment={onRemoveAssignment}
+              conflictReport={conflictReport}
             />
           );
         })}
