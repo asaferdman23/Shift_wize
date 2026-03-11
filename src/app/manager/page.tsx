@@ -1,4 +1,4 @@
-import { getSampleWeekId, getAllWeeks } from '@/db/store';
+import { getAllWeeks } from '@/db/store';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { STATUS_LABELS, getWeekDates } from '@/db/types';
@@ -10,7 +10,6 @@ import { CreateWeekButton } from '@/components/manager/CreateWeekButton';
 export const dynamic = 'force-dynamic';
 
 export default async function ManagerPage() {
-  await getSampleWeekId();
   const weeks = await getAllWeeks();
 
   return (

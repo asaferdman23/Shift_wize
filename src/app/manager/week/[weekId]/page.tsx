@@ -1,5 +1,5 @@
 import {
-  getSampleWeekId, getWeek, getWeekSlots, getAllRoles,
+  getWeek, getWeekSlots, getAllRoles,
   getSubmissionsForWeek, getWeekParticipants, getParticipantSummary, getMissingResponders,
 } from '@/db/store';
 import { ManagerDashboardClient } from '@/components/manager/ManagerDashboardClient';
@@ -8,8 +8,6 @@ export const dynamic = 'force-dynamic';
 
 export default async function ManagerWeekPage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
-  await getSampleWeekId(); // ensure seeded
-
   const week = await getWeek(weekId);
   if (!week) {
     return (

@@ -1,11 +1,10 @@
-import { getSampleWeekId, getWeek, getWeekSlots } from '@/db/store';
+import { getWeek, getWeekSlots } from '@/db/store';
 import { SoldierAvailabilityForm } from '@/components/soldier/SoldierAvailabilityForm';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SoldierWeekPage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
-  await getSampleWeekId();
 
   const week = await getWeek(weekId);
   if (!week) {

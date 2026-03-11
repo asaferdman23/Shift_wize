@@ -1,4 +1,4 @@
-import { getSampleWeekId, getWeek, getWeekSlots, getAssignmentsForWeek, getAllRoles } from '@/db/store';
+import { getWeek, getWeekSlots, getAssignmentsForWeek, getAllRoles } from '@/db/store';
 import { formatDate, getShiftEmoji } from '@/lib/utils';
 import { SHIFT_ORDER, SHIFT_LABELS, getWeekDates } from '@/db/types';
 import type { ShiftType } from '@/db/types';
@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 
 export default async function SchedulePage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
-  await getSampleWeekId();
 
   const week = await getWeek(weekId);
   if (!week) {

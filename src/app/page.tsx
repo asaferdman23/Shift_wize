@@ -1,4 +1,4 @@
-import { getSampleWeekId } from '@/db/store';
+import { getAllWeeks } from '@/db/store';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +7,8 @@ import { ArrowLeft, Calendar, Users, LayoutGrid, Smartphone } from 'lucide-react
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const weekId = await getSampleWeekId();
+  const weeks = await getAllWeeks();
+  const weekId = weeks.length > 0 ? weeks[0].id : null;
 
   const features = [
     {
@@ -66,17 +67,19 @@ export default async function HomePage() {
         </p>
 
         <div className="flex items-center justify-center gap-3 mt-8 flex-wrap">
-          <Link href={`/week/${weekId}`}>
+          <Link href="/manager">
             <Button size="lg" className="gap-2">
-              נסה טופס חייל
+              כניסה לפורטל מנהל
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <Link href={`/manager/week/${weekId}`}>
-            <Button size="lg" variant="outline" className="gap-2">
-              פתח לוח מנהל
-            </Button>
-          </Link>
+          {weekId && (
+            <Link href={`/week/${weekId}`}>
+              <Button size="lg" variant="outline" className="gap-2">
+                נסה טופס חייל
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -105,15 +108,19 @@ export default async function HomePage() {
             <p className="text-sm text-muted-foreground">שבוע לדוגמה עם 55 חיילים ו-32 תגובות.</p>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link href={`/week/${weekId}`}>
-              <Button variant="outline" size="sm">טופס חייל</Button>
-            </Link>
-            <Link href={`/manager/week/${weekId}`}>
+            <Link href="/manager">
               <Button variant="outline" size="sm">לוח מנהל</Button>
             </Link>
-            <Link href={`/week/${weekId}/schedule`}>
-              <Button variant="outline" size="sm">לוח משמרות</Button>
-            </Link>
+            {weekId && (
+              <>
+                <Link href={`/week/${weekId}`}>
+                  <Button variant="outline" size="sm">טופס חייל</Button>
+                </Link>
+                <Link href={`/week/${weekId}/schedule`}>
+                  <Button variant="outline" size="sm">לוח משמרות</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
