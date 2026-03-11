@@ -2,662 +2,837 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
 import {
   Shield,
   ArrowLeft,
   Calendar,
   Users,
   LayoutGrid,
-  Smartphone,
   Sparkles,
   AlertTriangle,
   Share2,
   GripVertical,
-  Zap,
-  Play,
+  CheckCircle,
+  Clock,
+  Wand2,
+  Copy,
+  UserX,
+  Filter,
+  Phone,
   Star,
-  ChevronDown,
   Check,
+  ExternalLink,
+  Table2,
+  ChevronLeft,
 } from 'lucide-react';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i: number) => ({
+/* ── animation variants ── */
+const fade = {
+  hidden: { opacity: 0, y: 20 },
+  show: (d: number = 0) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
+    transition: { delay: d * 0.1, duration: 0.55, ease: [0.25, 0.4, 0.45, 1] as const },
   }),
 };
 
-const stagger = {
-  visible: { transition: { staggerChildren: 0.08 } },
-};
+/* ── Reusable mini-components for demos ── */
+function BrowserChrome({ url, children }: { url: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-gray-200/80 bg-white shadow-2xl overflow-hidden">
+      <div className="bg-gray-50/80 px-4 py-2 flex items-center gap-3 border-b border-gray-100">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FEBC2E]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+        </div>
+        <div className="flex-1 flex justify-center">
+          <div className="bg-white rounded-md px-3 py-0.5 text-[11px] text-gray-400 border border-gray-100 min-w-[200px] text-center font-mono">
+            {url}
+          </div>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function StatusBadge({ text, variant }: { text: string; variant: 'green' | 'red' | 'amber' | 'gray' | 'blue' }) {
+  const styles = {
+    green: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    red: 'bg-red-50 text-red-600 border-red-100',
+    amber: 'bg-amber-50 text-amber-700 border-amber-100',
+    gray: 'bg-gray-50 text-gray-500 border-gray-100',
+    blue: 'bg-blue-50 text-blue-600 border-blue-100',
+  };
+  return (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${styles[variant]}`}>
+      {text}
+    </span>
+  );
+}
+
+function Avatar({ letter, color }: { letter: string; color: string }) {
+  return (
+    <div className={`w-7 h-7 rounded-full ${color} flex items-center justify-center text-[10px] font-bold text-white shrink-0`}>
+      {letter}
+    </div>
+  );
+}
+
+function AvailDot({ available }: { available: boolean }) {
+  return (
+    <div className={`w-5 h-5 rounded-full text-[9px] flex items-center justify-center font-bold ${
+      available ? 'bg-emerald-100 text-emerald-700' : 'bg-red-50 text-red-400'
+    }`}>
+      {available ? '✓' : '—'}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════ */
+/*                   LANDING PAGE                     */
+/* ══════════════════════════════════════════════════ */
 
 export default function LandingPage() {
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroY = useTransform(scrollYProgress, [0, 1], [0, 120]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      {/* ─── NAV ─── */}
-      <nav className="fixed top-0 inset-x-0 z-50 glass border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-md">
-              <Shield className="w-4.5 h-4.5 text-white" />
+    <div className="min-h-screen bg-[#fafafa] overflow-x-hidden">
+
+      {/* ─────────────────── NAV ─────────────────── */}
+      <nav className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+        <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[#111] flex items-center justify-center">
+              <Shield className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-lg tracking-tight">ShiftWize</span>
+            <span className="font-bold text-[15px] tracking-tight text-[#111]">ShiftWize</span>
           </Link>
 
-          <div className="hidden sm:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#features" className="hover:text-foreground transition-colors">תכונות</a>
-            <a href="#how" className="hover:text-foreground transition-colors">איך זה עובד</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">תמחור</a>
+          <div className="hidden md:flex items-center gap-8 text-[13px] text-gray-500">
+            <a href="#features" className="hover:text-[#111] transition-colors">תכונות</a>
+            <a href="#product" className="hover:text-[#111] transition-colors">המוצר</a>
+            <a href="#pricing" className="hover:text-[#111] transition-colors">תמחור</a>
           </div>
 
           <div className="flex items-center gap-2">
             <Link href="/auth/login">
-              <Button variant="ghost" size="sm">התחבר</Button>
+              <Button variant="ghost" size="sm" className="text-[13px] text-gray-600 hover:text-[#111]">
+                התחברות
+              </Button>
             </Link>
             <Link href="/auth/register">
-              <Button size="sm" className="glow-sm">התחל בחינם</Button>
+              <Button size="sm" className="text-[13px] bg-[#111] hover:bg-[#222] text-white rounded-lg h-8 px-4">
+                התחל בחינם
+              </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* ─── HERO ─── */}
-      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 bg-mesh noise">
-        {/* Decorative elements */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/8 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-40 right-10 w-96 h-96 bg-purple-500/6 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center relative z-10">
+      {/* ─────────────────── HERO ─────────────────── */}
+      <section ref={heroRef} className="relative pt-28 pb-4 sm:pt-36 sm:pb-8">
+        <motion.div style={{ y: heroY, opacity: heroOpacity }} className="max-w-[1200px] mx-auto px-6 text-center">
           {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/8 border border-primary/15 text-primary text-xs font-medium mb-8"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[12px] font-medium border border-emerald-100 mb-8"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             נבנה ע&quot;י מילואימניק עבור צה&quot;ל
           </motion.div>
 
           {/* Headline */}
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] max-w-4xl mx-auto"
-          >
-            תפסיקו לנהל משמרות
-            <br />
-            <span className="text-gradient">באקסלים מהגיהנום.</span>
-          </motion.h1>
-
-          {/* Subheadline */}
-          <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="text-lg sm:text-xl text-muted-foreground mt-6 max-w-2xl mx-auto leading-relaxed"
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="text-[40px] sm:text-[56px] md:text-[72px] font-extrabold tracking-[-0.03em] leading-[1.05] text-[#111] max-w-[900px] mx-auto"
           >
-            לינק אחד משותף. החיילים ממלאים זמינות מהנייד.
-            <br className="hidden sm:block" />
-            אתם גוררים ושוחררים — והלוח מוכן.
+            ניהול משמרות
+            <br />
+            <span className="bg-gradient-to-l from-blue-600 via-violet-600 to-blue-600 bg-clip-text text-transparent">
+              בלי האקסלים.
+            </span>
+          </motion.h1>
+
+          {/* Sub */}
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.15 }}
+            className="text-[17px] sm:text-[19px] text-gray-500 mt-5 max-w-[560px] mx-auto leading-relaxed"
+          >
+            שתפו לינק &rarr; החיילים ממלאים זמינות &rarr; גררו ושחררו. זהו.
           </motion.p>
 
           {/* CTAs */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="flex items-center justify-center gap-3 mt-10 flex-wrap"
+            transition={{ duration: 0.4, delay: 0.25 }}
+            className="flex items-center justify-center gap-3 mt-8"
           >
             <Link href="/auth/register">
-              <Button size="lg" className="text-base h-13 px-8 glow animate-pulse-glow">
+              <Button className="h-11 px-6 text-[14px] bg-[#111] hover:bg-[#222] text-white rounded-xl gap-2">
                 התחילו בחינם
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
               </Button>
             </Link>
-            <a href="#how">
-              <Button size="lg" variant="outline" className="text-base h-13 px-8 gap-2">
-                <Play className="w-4 h-4" />
-                איך זה עובד?
+            <a href="#product">
+              <Button variant="outline" className="h-11 px-6 text-[14px] rounded-xl border-gray-200 text-gray-600 hover:text-[#111]">
+                צפו בדמו
               </Button>
             </a>
           </motion.div>
 
-          {/* Social Proof */}
-          <motion.div
+          <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-12 flex items-center justify-center gap-3"
+            transition={{ delay: 0.4 }}
+            className="text-[12px] text-gray-400 mt-4"
           >
-            <div className="flex -space-x-2 rtl:space-x-reverse">
-              {[
-                'bg-blue-500',
-                'bg-emerald-500',
-                'bg-orange-500',
-                'bg-purple-500',
-                'bg-pink-500',
-              ].map((color, i) => (
-                <div
-                  key={i}
-                  className={`w-8 h-8 rounded-full ${color} border-2 border-white flex items-center justify-center text-[10px] font-bold text-white`}
-                >
-                  {['א', 'ד', 'מ', 'י', 'ש'][i]}
-                </div>
-              ))}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">+50 צוותים</span> כבר משתמשים
-            </div>
-          </motion.div>
+            חינם לצוותים עד 100 חיילים &bull; ללא כרטיס אשראי &bull; הגדרה ב-2 דקות
+          </motion.p>
+        </motion.div>
 
-          {/* Hero Visual — Floating Board Mock */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            className="mt-16 relative max-w-4xl mx-auto"
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-20 pointer-events-none" />
-            <div className="glass-card rounded-2xl p-1 shadow-2xl border-gradient">
-              {/* Browser chrome */}
-              <div className="bg-gray-50 rounded-t-xl px-4 py-2.5 flex items-center gap-2 border-b">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="bg-white rounded-md px-4 py-1 text-xs text-muted-foreground border w-64 text-center">
-                    shiftwize.app/manager
-                  </div>
-                </div>
-              </div>
-              {/* Mock Board Content */}
-              <div className="bg-white rounded-b-xl p-6 min-h-[280px] sm:min-h-[340px]">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <div className="h-5 w-48 bg-gray-100 rounded-md" />
-                    <div className="h-3 w-32 bg-gray-50 rounded mt-2" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="h-8 w-24 bg-primary/10 rounded-lg" />
-                    <div className="h-8 w-8 bg-primary rounded-lg" />
-                  </div>
-                </div>
-                {/* Grid */}
-                <div className="grid grid-cols-3 gap-3">
-                  {['בוקר', 'צהריים', 'לילה'].map((shift) => (
-                    <div key={shift} className="space-y-2">
-                      <div className="text-xs font-medium text-muted-foreground text-center py-1 bg-gray-50 rounded-lg">
-                        {shift}
-                      </div>
-                      {[1, 2, 3].map((j) => (
-                        <div
-                          key={j}
-                          className="h-10 rounded-lg border border-dashed border-gray-200 flex items-center justify-center"
-                        >
-                          {j <= 2 ? (
-                            <div className="flex items-center gap-1.5 px-2">
-                              <GripVertical className="w-3 h-3 text-gray-300" />
-                              <div className="h-5 w-5 rounded-full bg-primary/20" />
-                              <div className="h-2.5 w-16 bg-gray-100 rounded" />
-                            </div>
-                          ) : (
-                            <div className="text-[10px] text-gray-300">+ גרור לכאן</div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Scroll indicator */}
+        {/* ── HERO PRODUCT DEMO ── */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5 }}
-          className="flex justify-center mt-8"
+          initial={{ opacity: 0, y: 60 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="max-w-[1100px] mx-auto px-6 mt-12"
         >
-          <ChevronDown className="w-5 h-5 text-muted-foreground animate-bounce" />
+          <BrowserChrome url="shiftwize.app/manager/week/march-2026">
+            <div className="bg-[#f8f8f8] p-4 sm:p-6">
+              {/* Header bar */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-bold text-[#111]">שבוע מילואים — 15-17 מרץ</h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">55 חיילים צפויים &bull; פתוח להגשה</p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-[11px] text-gray-500">
+                    <Copy className="w-3 h-3" />
+                    העתק לינק
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-[#111] text-white rounded-lg px-3 py-1.5 text-[11px]">
+                    <ExternalLink className="w-3 h-3" />
+                    פתח טופס
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded-lg w-fit mb-4">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-md text-[11px] font-medium text-[#111] shadow-sm">
+                  <Table2 className="w-3 h-3" />
+                  תגובות
+                  <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">32</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-gray-400">
+                  <UserX className="w-3 h-3" />
+                  חסרים
+                  <span className="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">23</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] text-gray-400">
+                  <LayoutGrid className="w-3 h-3" />
+                  לוח שיבוץ
+                </div>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-4 gap-2.5 mb-4">
+                {[
+                  { icon: Users, label: 'סה"כ צפויים', value: '55', sub: '38 ליבה · 17 תגבור', bg: 'bg-blue-50', iconColor: 'text-blue-500' },
+                  { icon: CheckCircle, label: 'הגיבו', value: '32 (58%)', sub: '4 עדכנו', bg: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+                  { icon: Clock, label: 'לא הגיבו', value: '23', sub: 'שלח תזכורת', bg: 'bg-red-50', iconColor: 'text-red-500' },
+                  { icon: AlertTriangle, label: 'עם הגבלות', value: '8', sub: 'לא לילות, לא מטבח...', bg: 'bg-amber-50', iconColor: 'text-amber-500' },
+                ].map((c) => (
+                  <div key={c.label} className="bg-white rounded-xl border border-gray-100 p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className={`w-7 h-7 rounded-lg ${c.bg} flex items-center justify-center`}>
+                        <c.icon className={`w-3.5 h-3.5 ${c.iconColor}`} />
+                      </div>
+                      <span className="text-[10px] text-gray-400">{c.label}</span>
+                    </div>
+                    <div className="text-lg font-bold text-[#111] leading-none">{c.value}</div>
+                    <div className="text-[10px] text-gray-400 mt-1">{c.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Filter bar */}
+              <div className="flex items-center gap-1.5 mb-3">
+                <Filter className="w-3 h-3 text-gray-300" />
+                {[
+                  { label: 'הכל', count: 55, active: true },
+                  { label: 'לא הגישו', count: 23, active: false },
+                  { label: 'תגבור', count: 17, active: false },
+                  { label: 'עם הגבלות', count: 8, active: false },
+                ].map((f) => (
+                  <span
+                    key={f.label}
+                    className={`text-[10px] px-2 py-1 rounded-full ${
+                      f.active
+                        ? 'bg-[#111] text-white'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {f.label} ({f.count})
+                  </span>
+                ))}
+              </div>
+
+              {/* Response Table */}
+              <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                {/* Header */}
+                <div className="grid grid-cols-[2fr_0.8fr_0.8fr_repeat(3,0.5fr)_1.2fr] gap-2 px-3 py-2 bg-gray-50/80 border-b text-[10px] font-medium text-gray-400">
+                  <span>חייל</span>
+                  <span className="text-center">סוג</span>
+                  <span className="text-center">סטטוס</span>
+                  <span className="text-center">🌅 ה׳</span>
+                  <span className="text-center">☀️ ו׳</span>
+                  <span className="text-center">🌙 ש׳</span>
+                  <span>הגבלות</span>
+                </div>
+                {/* Rows */}
+                {[
+                  { name: 'אבי כהן', id: '8401234', type: 'ליבה', typeBadge: 'blue' as const, status: 'הוגש', statusBadge: 'green' as const, avail: [true, true, false], constraint: '' },
+                  { name: 'דני לוי', id: '8405678', type: 'ליבה', typeBadge: 'blue' as const, status: 'עודכן', statusBadge: 'green' as const, avail: [true, true, true], constraint: '' },
+                  { name: 'יוסי דהן', id: '8409012', type: 'תגבור', typeBadge: 'amber' as const, status: 'הוגש', statusBadge: 'green' as const, avail: [true, false, true], constraint: 'לא לילות' },
+                  { name: 'משה פרץ', id: '8403456', type: 'ליבה', typeBadge: 'blue' as const, status: 'חסר', statusBadge: 'red' as const, avail: [false, false, false], constraint: '' },
+                  { name: 'שרה אלון', id: '8407890', type: 'תגבור', typeBadge: 'amber' as const, status: 'הוגש', statusBadge: 'green' as const, avail: [true, true, true], constraint: 'רק מטבח' },
+                ].map((s, i) => (
+                  <div
+                    key={s.id}
+                    className={`grid grid-cols-[2fr_0.8fr_0.8fr_repeat(3,0.5fr)_1.2fr] gap-2 px-3 py-2 items-center border-b border-gray-50 text-[11px] ${
+                      s.statusBadge === 'red' ? 'bg-red-50/30' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Avatar letter={s.name[0]} color={i % 3 === 0 ? 'bg-blue-500' : i % 3 === 1 ? 'bg-violet-500' : 'bg-amber-500'} />
+                      <div>
+                        <div className="font-medium text-[#111]">{s.name}</div>
+                        <div className="text-[9px] text-gray-400">{s.id}</div>
+                      </div>
+                    </div>
+                    <div className="text-center"><StatusBadge text={s.type} variant={s.typeBadge} /></div>
+                    <div className="text-center"><StatusBadge text={s.status} variant={s.statusBadge} /></div>
+                    {s.avail.map((a, j) => (
+                      <div key={j} className="flex justify-center">
+                        {s.statusBadge === 'red' ? (
+                          <div className="w-5 h-5 rounded-full bg-gray-50 text-gray-300 text-[9px] flex items-center justify-center">—</div>
+                        ) : (
+                          <AvailDot available={a} />
+                        )}
+                      </div>
+                    ))}
+                    <div>
+                      {s.constraint ? (
+                        <StatusBadge text={s.constraint} variant="amber" />
+                      ) : (
+                        <span className="text-gray-300 text-[10px]">—</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </BrowserChrome>
+          {/* Fade overlay */}
+          <div className="h-24 -mt-24 relative z-10 bg-gradient-to-t from-[#fafafa] to-transparent pointer-events-none" />
         </motion.div>
       </section>
 
-      {/* ─── TRUST STRIP ─── */}
-      <section className="py-12 border-b bg-white/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase mb-6">
-            נבנה עבור צוותי מילואים מובילים
-          </p>
-          <div className="flex items-center justify-center gap-10 sm:gap-16 opacity-30">
-            {['חי"ר', 'שריון', 'תותחנים', 'הנדסה', 'חי"ר 51'].map((unit) => (
-              <div key={unit} className="text-lg sm:text-xl font-bold tracking-tight">
-                {unit}
-              </div>
+      {/* ─────────────────── FEATURES ─────────────────── */}
+      <section id="features" className="py-20 sm:py-28">
+        <div className="max-w-[1100px] mx-auto px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+            className="text-center mb-16"
+          >
+            <motion.p variants={fade} custom={0} className="text-[12px] font-semibold text-violet-600 tracking-wide mb-3">
+              תכונות
+            </motion.p>
+            <motion.h2 variants={fade} custom={1} className="text-[32px] sm:text-[40px] font-extrabold tracking-tight text-[#111]">
+              הכל מה שצריך. כלום מה שלא.
+            </motion.h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: Share2,
+                iconBg: 'bg-blue-50',
+                iconColor: 'text-blue-600',
+                title: 'לינק אחד לכולם',
+                desc: 'שתפו לינק בוואטסאפ. החיילים פותחים מהנייד, ממלאים שם + זמינות, והתגובה אצלכם תוך שניות.',
+              },
+              {
+                icon: LayoutGrid,
+                iconBg: 'bg-violet-50',
+                iconColor: 'text-violet-600',
+                title: 'לוח גרירה ושחרור',
+                desc: 'גררו חיילים לעמדות. המערכת מזהה קונפליקטים, עומס יתר, וחיילים חסרים — בזמן אמת.',
+              },
+              {
+                icon: Sparkles,
+                iconBg: 'bg-amber-50',
+                iconColor: 'text-amber-600',
+                title: 'שיבוץ אוטומטי',
+                desc: 'לחצו "שרביט קסם" והמערכת תשבץ חיילים לפי זמינות, חלוקה הוגנת, ואילוצים אישיים.',
+              },
+              {
+                icon: AlertTriangle,
+                iconBg: 'bg-red-50',
+                iconColor: 'text-red-500',
+                title: 'זיהוי קונפליקטים',
+                desc: 'חייל שובץ פעמיים? סימן "לא זמין" אבל שובץ? שגיאות ואזהרות מוצגות מיד.',
+              },
+              {
+                icon: UserX,
+                iconBg: 'bg-rose-50',
+                iconColor: 'text-rose-500',
+                title: 'מעקב חסרי תגובה',
+                desc: 'רשימת חיילים שטרם הגיבו עם כפתור העתקת טלפונים ושליחת תזכורת בוואטסאפ.',
+              },
+              {
+                icon: Phone,
+                iconBg: 'bg-emerald-50',
+                iconColor: 'text-emerald-600',
+                title: 'לוח משמרות לנייד',
+                desc: 'לוח סופי מותאם לנייד. מוכן לצילום מסך ושליחה בקבוצה.',
+              },
+            ].map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial="hidden"
+                whileInView="show"
+                custom={i * 0.5}
+                viewport={{ once: true, margin: '-40px' }}
+                variants={fade}
+                className="bg-white rounded-2xl border border-gray-100 p-6 hover:border-gray-200 hover:shadow-md transition-all duration-300"
+              >
+                <div className={`w-10 h-10 rounded-xl ${f.iconBg} flex items-center justify-center mb-4`}>
+                  <f.icon className={`w-5 h-5 ${f.iconColor}`} />
+                </div>
+                <h3 className="text-[15px] font-bold text-[#111] mb-1.5">{f.title}</h3>
+                <p className="text-[13px] text-gray-500 leading-relaxed">{f.desc}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── FEATURES BENTO ─── */}
-      <section id="features" className="py-20 sm:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      {/* ─────────────── PRODUCT DEMO: BOARD ─────────────── */}
+      <section id="product" className="py-20 sm:py-28 bg-white border-y border-gray-100">
+        <div className="max-w-[1100px] mx-auto px-6">
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+            className="text-center mb-14"
           >
-            <motion.div variants={fadeUp} custom={0}>
-              <span className="text-xs font-semibold text-primary bg-primary/8 px-3 py-1 rounded-full">
-                תכונות
-              </span>
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              custom={1}
-              className="text-3xl sm:text-4xl font-bold mt-4"
-            >
-              הכל מה שצריך.
-              <br />
-              <span className="text-muted-foreground">כלום מה שלא.</span>
+            <motion.p variants={fade} custom={0} className="text-[12px] font-semibold text-violet-600 tracking-wide mb-3">
+              לוח השיבוץ
+            </motion.p>
+            <motion.h2 variants={fade} custom={1} className="text-[32px] sm:text-[40px] font-extrabold tracking-tight text-[#111]">
+              גררו. שחררו. סיימתם.
             </motion.h2>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-50px' }}
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
-            {/* Feature 1 — Large */}
-            <motion.div
-              variants={fadeUp}
-              custom={0}
-              className="group glass-card rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-gradient"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <Share2 className="w-6 h-6 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">לינק אחד — 55 חיילים ממלאים</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                שתפו לינק בוואטסאפ. החיילים פותחים מהנייד, ממלאים שם + זמינות,
-                ותוך שניות — התגובה אצלכם בלוח.
-              </p>
-              <div className="mt-6 bg-gray-50 rounded-xl p-4 border">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                    א
-                  </div>
-                  <div className="flex-1">
-                    <div className="h-3 w-24 bg-gray-200 rounded" />
-                    <div className="h-2 w-16 bg-gray-100 rounded mt-1" />
-                  </div>
-                  <div className="flex gap-1">
-                    <div className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full">זמין</div>
-                    <div className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full">זמין</div>
-                    <div className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] rounded-full">לא</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-xs font-bold text-orange-600">
-                    ד
-                  </div>
-                  <div className="flex-1">
-                    <div className="h-3 w-20 bg-gray-200 rounded" />
-                    <div className="h-2 w-12 bg-gray-100 rounded mt-1" />
-                  </div>
-                  <div className="flex gap-1">
-                    <div className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full">זמין</div>
-                    <div className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full">זמין</div>
-                    <div className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full">זמין</div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Feature 2 — Large */}
-            <motion.div
-              variants={fadeUp}
-              custom={1}
-              className="group glass-card rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-gradient"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <LayoutGrid className="w-6 h-6 text-purple-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">לוח גרירה ושחרור</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                גררו חיילים לעמדות. הלוח יגיד לכם מיד אם יש קונפליקט,
-                עומס יתר, או חייל שחסר.
-              </p>
-              <div className="mt-6 bg-gray-50 rounded-xl p-4 border space-y-2">
-                {['קב"ט מחנה', 'אב"ט שער', 'סייר'].map((role, i) => (
-                  <div key={role} className="flex items-center gap-2 bg-white rounded-lg p-2 border">
-                    <GripVertical className="w-3.5 h-3.5 text-gray-300" />
-                    <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[9px] font-bold text-primary">
-                      {['מ', 'א', 'ס'][i]}
-                    </div>
-                    <span className="text-xs font-medium flex-1">{role}</span>
-                    {i === 2 ? (
-                      <div className="px-1.5 py-0.5 bg-red-50 text-red-500 text-[9px] rounded border border-red-100">
-                        קונפליקט
-                      </div>
-                    ) : (
-                      <div className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 text-[9px] rounded border border-emerald-100">
-                        תקין
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Feature 3 — Small */}
-            <motion.div
-              variants={fadeUp}
-              custom={2}
-              className="group glass-card rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-gradient"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <Sparkles className="w-6 h-6 text-amber-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">המלצות חכמות</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                לחצו &quot;שרביט קסם&quot; — והמערכת תשבץ אוטומטית חיילים
-                לפי זמינות, הגינות חלוקה, ואילוצים אישיים.
-              </p>
-            </motion.div>
-
-            {/* Feature 4 — Small */}
-            <motion.div
-              variants={fadeUp}
-              custom={3}
-              className="group glass-card rounded-2xl p-8 hover:shadow-xl transition-all duration-300 border-gradient"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                <AlertTriangle className="w-6 h-6 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold mb-2">זיהוי קונפליקטים</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                חייל שובץ פעמיים? סימן &quot;לא זמין&quot; אבל שובץ?
-                המערכת מציגה שגיאות ואזהרות בזמן אמת.
-              </p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── HOW IT WORKS ─── */}
-      <section id="how" className="py-20 sm:py-28 bg-white/50 border-y">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-16"
-          >
-            <motion.div variants={fadeUp} custom={0}>
-              <span className="text-xs font-semibold text-primary bg-primary/8 px-3 py-1 rounded-full">
-                איך זה עובד
-              </span>
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              custom={1}
-              className="text-3xl sm:text-4xl font-bold mt-4"
-            >
-              שלושה צעדים.
-              <br />
-              <span className="text-muted-foreground">שתי דקות.</span>
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-50px' }}
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {[
-              {
-                step: '01',
-                icon: Calendar,
-                title: 'צרו שבוע',
-                desc: 'בחרו תאריכים, עמדות ומשמרות. הכל גמיש — מ-3 ימים עד שבוע שלם.',
-                color: 'blue',
-              },
-              {
-                step: '02',
-                icon: Users,
-                title: 'שתפו לינק',
-                desc: 'העתיקו את הלינק ושלחו בקבוצת הוואטסאפ. החיילים ממלאים מהנייד תוך 30 שניות.',
-                color: 'purple',
-              },
-              {
-                step: '03',
-                icon: LayoutGrid,
-                title: 'גררו ושחררו',
-                desc: 'בנו את לוח המשמרות בגרירה, קבלו המלצות חכמות, ופרסמו.',
-                color: 'emerald',
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.step}
-                variants={fadeUp}
-                custom={i}
-                className="relative text-center"
-              >
-                {/* Connector line */}
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-12 -left-4 w-8 border-t-2 border-dashed border-gray-200" />
-                )}
-                <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/5 to-purple-500/5 border border-primary/10 mb-6 mx-auto">
-                  <item.icon className="w-10 h-10 text-primary" />
-                </div>
-                <div className="text-xs font-bold text-primary/40 mb-2">שלב {item.step}</div>
-                <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-xs mx-auto">
-                  {item.desc}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── PRODUCT SCREENSHOT ─── */}
-      <section className="py-20 sm:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
-            className="text-center mb-12"
-          >
-            <motion.h2
-              variants={fadeUp}
-              custom={0}
-              className="text-3xl sm:text-4xl font-bold"
-            >
-              ממשק שנבנה למהירות
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              custom={1}
-              className="text-muted-foreground mt-3 text-lg"
-            >
-              כמו ג&apos;ירה למשמרות — מהיר, נקי, ובלי בולשיט.
+            <motion.p variants={fade} custom={2} className="text-gray-500 mt-3 text-[16px] max-w-md mx-auto">
+              לוח שיבוץ בגרירה עם המלצות חכמות וזיהוי קונפליקטים בזמן אמת.
             </motion.p>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.97 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
-            className="relative"
           >
-            <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-purple-500/20 to-primary/20 rounded-3xl blur-2xl opacity-40" />
-            <div className="relative glass-card rounded-2xl p-1 shadow-2xl border-gradient">
-              <div className="bg-gray-50 rounded-t-xl px-4 py-2.5 flex items-center gap-2 border-b">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
+            <BrowserChrome url="shiftwize.app/manager/week/march-2026#board">
+              <div className="bg-[#f8f8f8] p-4 sm:p-6">
+                {/* Board controls */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 bg-[#111] text-white rounded-lg px-3 py-1.5 text-[11px]">
+                      <Wand2 className="w-3 h-3" />
+                      מילוי אוטומטי
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-white border border-gray-200 text-gray-500 rounded-lg px-3 py-1.5 text-[11px]">
+                      נקה הכל
+                    </div>
+                    <span className="text-[10px] text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">14 שיבוצים</span>
+                  </div>
+                  {/* Conflict summary */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 rounded-lg px-2 py-1 text-[10px] border border-emerald-100">
+                      <CheckCircle className="w-3 h-3" />
+                      אין שגיאות
+                    </div>
+                    <div className="flex items-center gap-1 bg-amber-50 text-amber-700 rounded-lg px-2 py-1 text-[10px] border border-amber-100">
+                      <AlertTriangle className="w-3 h-3" />
+                      2 אזהרות
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="bg-white rounded-md px-4 py-1 text-xs text-muted-foreground border w-72 text-center">
-                    shiftwize.app/manager/week/abc123
+
+                <div className="flex gap-3">
+                  {/* Unassigned panel */}
+                  <div className="w-44 shrink-0">
+                    <div className="bg-white rounded-xl border border-gray-100 p-2.5">
+                      <div className="text-[10px] font-medium text-gray-400 mb-2">לא שובצו (8)</div>
+                      <div className="space-y-1.5">
+                        {[
+                          { name: 'רון אביב', color: 'bg-blue-500' },
+                          { name: 'תמר שלום', color: 'bg-violet-500' },
+                          { name: 'עומר כץ', color: 'bg-emerald-500' },
+                          { name: 'נועה בר', color: 'bg-pink-500' },
+                        ].map((s) => (
+                          <div key={s.name} className="flex items-center gap-1.5 bg-gray-50 rounded-lg p-1.5 cursor-grab">
+                            <GripVertical className="w-3 h-3 text-gray-300" />
+                            <Avatar letter={s.name[0]} color={s.color} />
+                            <span className="text-[10px] font-medium text-[#111]">{s.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Schedule grid */}
+                  <div className="flex-1 grid grid-cols-3 gap-2.5">
+                    {[
+                      { day: 'חמישי 15/3', shift: '🌅 בוקר', slots: [
+                        { role: 'קב"ט מחנה', soldier: 'אבי כהן', color: 'bg-blue-500', ok: true },
+                        { role: 'אב"ט שער', soldier: 'דני לוי', color: 'bg-violet-500', ok: true },
+                        { role: 'סייר', soldier: null, color: '', ok: true },
+                      ]},
+                      { day: 'שישי 16/3', shift: '☀️ צהריים', slots: [
+                        { role: 'קב"ט מחנה', soldier: 'יוסי דהן', color: 'bg-amber-500', ok: true },
+                        { role: 'אב"ט שער', soldier: 'שרה אלון', color: 'bg-pink-500', ok: false },
+                        { role: 'סייר', soldier: 'אבי כהן', color: 'bg-blue-500', ok: true },
+                      ]},
+                      { day: 'שבת 17/3', shift: '🌙 לילה', slots: [
+                        { role: 'קב"ט מחנה', soldier: 'דני לוי', color: 'bg-violet-500', ok: true },
+                        { role: 'אב"ט שער', soldier: 'משה פרץ', color: 'bg-emerald-500', ok: true },
+                        { role: 'סייר', soldier: null, color: '', ok: true },
+                      ]},
+                    ].map((col) => (
+                      <div key={col.day} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                        <div className="bg-gray-50 px-3 py-2 border-b border-gray-100 text-center">
+                          <div className="text-[10px] text-gray-400">{col.day}</div>
+                          <div className="text-[12px] font-medium text-[#111]">{col.shift}</div>
+                        </div>
+                        <div className="p-2 space-y-1.5">
+                          {col.slots.map((slot) => (
+                            <div key={slot.role}>
+                              <div className="text-[9px] text-gray-400 mb-0.5 px-1">{slot.role}</div>
+                              {slot.soldier ? (
+                                <div className={`flex items-center gap-1.5 rounded-lg p-1.5 border ${
+                                  !slot.ok ? 'border-red-200 bg-red-50/50' : 'border-gray-100 bg-gray-50/50'
+                                }`}>
+                                  <GripVertical className="w-2.5 h-2.5 text-gray-300" />
+                                  <Avatar letter={slot.soldier[0]} color={slot.color} />
+                                  <span className="text-[10px] font-medium text-[#111] flex-1">{slot.soldier}</span>
+                                  {!slot.ok && (
+                                    <AlertTriangle className="w-3 h-3 text-red-400" />
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="h-8 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center">
+                                  <span className="text-[9px] text-gray-300">גרור לכאן</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-b-xl p-8 min-h-[320px] sm:min-h-[400px]">
-                {/* Tabs */}
-                <div className="flex gap-1 mb-6 bg-gray-50 p-1 rounded-xl w-fit">
-                  <div className="px-4 py-2 bg-white rounded-lg text-xs font-medium shadow-sm">תגובות</div>
-                  <div className="px-4 py-2 text-xs font-medium text-muted-foreground">חסרים</div>
-                  <div className="px-4 py-2 text-xs font-medium text-muted-foreground">לוח שיבוץ</div>
-                </div>
-                {/* Summary cards */}
-                <div className="grid grid-cols-4 gap-3 mb-6">
-                  {[
-                    { label: 'צפויים', value: '55', color: 'bg-blue-50 text-blue-600' },
-                    { label: 'הגישו', value: '32', color: 'bg-emerald-50 text-emerald-600' },
-                    { label: 'חסרים', value: '23', color: 'bg-red-50 text-red-600' },
-                    { label: 'אילוצים', value: '8', color: 'bg-amber-50 text-amber-600' },
-                  ].map((card) => (
-                    <div key={card.label} className="rounded-xl border p-3 text-center">
-                      <div className={`text-2xl font-bold ${card.color.split(' ')[1]}`}>{card.value}</div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">{card.label}</div>
+            </BrowserChrome>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ──────────── PRODUCT DEMO: SOLDIER FORM ──────────── */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-[1100px] mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-80px' }}
+            >
+              <motion.p variants={fade} custom={0} className="text-[12px] font-semibold text-violet-600 tracking-wide mb-3">
+                טופס החייל
+              </motion.p>
+              <motion.h2 variants={fade} custom={1} className="text-[32px] sm:text-[36px] font-extrabold tracking-tight text-[#111] leading-tight">
+                30 שניות מהנייד.
+                <br />
+                <span className="text-gray-400">בלי אפליקציה.</span>
+              </motion.h2>
+              <motion.p variants={fade} custom={2} className="text-gray-500 mt-4 text-[15px] leading-relaxed max-w-md">
+                שלחו לינק אחד בוואטסאפ. החיילים פותחים מהדפדפן, ממלאים שם וזמינות, ומקבלים אישור מיידי. בלי הורדות, בלי הרשמה.
+              </motion.p>
+              <motion.div variants={fade} custom={3} className="mt-6 space-y-3">
+                {[
+                  'זיהוי אוטומטי לפי מספר אישי',
+                  'עדכון זמינות חוזר עד הסגירה',
+                  'אילוצים בטקסט חופשי',
+                  'מותאם למובייל — 100%',
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-emerald-600" />
                     </div>
-                  ))}
+                    <span className="text-[13px] text-gray-600">{f}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Phone mockup */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="flex justify-center"
+            >
+              <div className="w-[280px] bg-white rounded-[32px] border-[6px] border-gray-900 shadow-2xl overflow-hidden">
+                {/* Phone notch */}
+                <div className="bg-gray-900 h-6 flex items-center justify-center">
+                  <div className="w-20 h-3 bg-gray-800 rounded-full" />
                 </div>
-                {/* Table mock */}
-                <div className="space-y-2">
-                  {[
-                    { name: 'אבי כהן', status: 'הגיש', badge: 'bg-emerald-100 text-emerald-700' },
-                    { name: 'דני לוי', status: 'הגיש', badge: 'bg-emerald-100 text-emerald-700' },
-                    { name: 'משה פרץ', status: 'טרם הגיש', badge: 'bg-gray-100 text-gray-500' },
-                    { name: 'יוסי דהן', status: 'עם אילוצים', badge: 'bg-amber-100 text-amber-700' },
-                  ].map((row) => (
-                    <div key={row.name} className="flex items-center gap-3 p-2.5 bg-gray-50/50 rounded-lg">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                        {row.name[0]}
+                {/* Phone content */}
+                <div className="bg-white">
+                  {/* Form header */}
+                  <div className="bg-white/90 backdrop-blur-sm border-b px-4 py-3 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-[#111] flex items-center justify-center">
+                      <Shield className="w-3 h-3 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-[#111]">ShiftWize</div>
+                      <div className="text-[9px] text-gray-400">שבוע 15-17 מרץ</div>
+                    </div>
+                  </div>
+                  {/* Form fields */}
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <div className="text-[10px] font-medium text-gray-600 mb-1">מספר אישי</div>
+                      <div className="h-8 bg-gray-50 rounded-lg border border-gray-200 flex items-center px-2.5 text-[11px] text-gray-400">8401234</div>
+                      <div className="text-[9px] text-emerald-600 mt-0.5 flex items-center gap-1">
+                        <CheckCircle className="w-2.5 h-2.5" />
+                        נמצאה הגשה קיימת — הנתונים נטענו
                       </div>
-                      <span className="text-sm font-medium flex-1">{row.name}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${row.badge}`}>
-                        {row.status}
-                      </span>
                     </div>
-                  ))}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="text-[10px] font-medium text-gray-600 mb-1">שם פרטי</div>
+                        <div className="h-8 bg-gray-50 rounded-lg border border-gray-200 flex items-center px-2.5 text-[11px] text-[#111]">אבי</div>
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-medium text-gray-600 mb-1">שם משפחה</div>
+                        <div className="h-8 bg-gray-50 rounded-lg border border-gray-200 flex items-center px-2.5 text-[11px] text-[#111]">כהן</div>
+                      </div>
+                    </div>
+                    {/* Availability matrix */}
+                    <div>
+                      <div className="text-[10px] font-medium text-gray-600 mb-2">זמינות</div>
+                      <div className="bg-gray-50 rounded-lg border border-gray-200 p-2">
+                        <div className="grid grid-cols-4 gap-1 text-center text-[8px] text-gray-400 mb-1.5">
+                          <span></span>
+                          <span>🌅 בוקר</span>
+                          <span>☀️ צהריים</span>
+                          <span>🌙 לילה</span>
+                        </div>
+                        {['ה׳ 15', 'ו׳ 16', 'ש׳ 17'].map((day, di) => (
+                          <div key={day} className="grid grid-cols-4 gap-1 mb-1">
+                            <span className="text-[9px] text-gray-500 flex items-center">{day}</span>
+                            {[0, 1, 2].map((si) => {
+                              const on = !(di === 0 && si === 2) && !(di === 2 && si === 1);
+                              return (
+                                <div
+                                  key={si}
+                                  className={`h-6 rounded flex items-center justify-center text-[9px] font-bold ${
+                                    on ? 'bg-emerald-100 text-emerald-700' : 'bg-red-50 text-red-400'
+                                  }`}
+                                >
+                                  {on ? '✓' : '✗'}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="bg-[#111] text-white text-[12px] font-medium text-center rounded-lg py-2.5 flex items-center justify-center gap-1.5">
+                      עדכן זמינות
+                      <ChevronLeft className="w-3 h-3" />
+                    </div>
+                  </div>
+                </div>
+                {/* Phone bottom bar */}
+                <div className="h-4 bg-white flex items-center justify-center">
+                  <div className="w-24 h-1 bg-gray-200 rounded-full" />
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ─── TESTIMONIAL ─── */}
-      <section className="py-20 sm:py-24 bg-white/50 border-y">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="flex justify-center gap-1 mb-6">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star key={s} className="w-5 h-5 text-amber-400 fill-amber-400" />
-              ))}
-            </div>
-            <blockquote className="text-2xl sm:text-3xl font-bold leading-snug">
-              &ldquo;מאז שעברנו לShiftWize, אני חוסך 4 שעות כל שבוע מילואים.
-              <span className="text-gradient"> פשוט עובד.</span>&rdquo;
-            </blockquote>
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
-                מ
-              </div>
-              <div className="text-right">
-                <div className="font-semibold text-sm">מפקד פלוגה</div>
-                <div className="text-xs text-muted-foreground">גדוד 51, חטיבת גולני</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── PRICING ─── */}
-      <section id="pricing" className="py-20 sm:py-28">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      {/* ─────────────────── HOW IT WORKS ─────────────────── */}
+      <section className="py-20 sm:py-28 bg-white border-y border-gray-100">
+        <div className="max-w-[1100px] mx-auto px-6">
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={stagger}
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
             className="text-center mb-16"
           >
-            <motion.div variants={fadeUp} custom={0}>
-              <span className="text-xs font-semibold text-primary bg-primary/8 px-3 py-1 rounded-full">
-                תמחור
-              </span>
-            </motion.div>
-            <motion.h2
-              variants={fadeUp}
-              custom={1}
-              className="text-3xl sm:text-4xl font-bold mt-4"
-            >
-              חינם. כי מילואימניקים
-              <br />
-              <span className="text-muted-foreground">מגיע להם.</span>
+            <motion.p variants={fade} custom={0} className="text-[12px] font-semibold text-violet-600 tracking-wide mb-3">
+              איך זה עובד
+            </motion.p>
+            <motion.h2 variants={fade} custom={1} className="text-[32px] sm:text-[40px] font-extrabold tracking-tight text-[#111]">
+              שלושה צעדים. שתי דקות.
             </motion.h2>
           </motion.div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+            {[
+              {
+                num: '1',
+                icon: Calendar,
+                title: 'צרו שבוע',
+                desc: 'בחרו תאריכים, עמדות ומשמרות. הכל גמיש.',
+              },
+              {
+                num: '2',
+                icon: Users,
+                title: 'שתפו לינק',
+                desc: 'העתיקו לינק ושלחו בוואטסאפ. ממלאים תוך 30 שניות.',
+              },
+              {
+                num: '3',
+                icon: LayoutGrid,
+                title: 'גררו ושחררו',
+                desc: 'בנו את הלוח, קבלו המלצות, ופרסמו.',
+              },
+            ].map((s, i) => (
+              <motion.div
+                key={s.num}
+                initial="hidden"
+                whileInView="show"
+                custom={i}
+                viewport={{ once: true, margin: '-40px' }}
+                variants={fade}
+                className="text-center px-8 py-8 relative"
+              >
+                {i < 2 && (
+                  <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 w-px h-16 bg-gray-200" />
+                )}
+                <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <s.icon className="w-6 h-6 text-[#111]" />
+                </div>
+                <div className="text-[11px] font-bold text-violet-600 mb-2">שלב {s.num}</div>
+                <h3 className="text-[17px] font-bold text-[#111] mb-1">{s.title}</h3>
+                <p className="text-[13px] text-gray-500">{s.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────── TESTIMONIAL ─────────────────── */}
+      <section className="py-20 sm:py-24">
+        <div className="max-w-[700px] mx-auto px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex justify-center gap-0.5 mb-6">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} className="w-4 h-4 text-amber-400 fill-amber-400" />
+              ))}
+            </div>
+            <blockquote className="text-[22px] sm:text-[28px] font-bold leading-snug text-[#111]">
+              &ldquo;מאז ShiftWize, אני חוסך 4 שעות כל שבוע מילואים.
+              <span className="text-violet-600"> פשוט עובד.</span>&rdquo;
+            </blockquote>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-500 text-sm">
+                מ
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-[13px] text-[#111]">מפקד פלוגה</div>
+                <div className="text-[11px] text-gray-400">גדוד 51, חטיבת גולני</div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ─────────────────── PRICING ─────────────────── */}
+      <section id="pricing" className="py-20 sm:py-28 bg-white border-y border-gray-100">
+        <div className="max-w-[900px] mx-auto px-6">
           <motion.div
             initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+            className="text-center mb-14"
           >
-            {/* Free Plan */}
+            <motion.p variants={fade} custom={0} className="text-[12px] font-semibold text-violet-600 tracking-wide mb-3">
+              תמחור
+            </motion.p>
+            <motion.h2 variants={fade} custom={1} className="text-[32px] sm:text-[40px] font-extrabold tracking-tight text-[#111]">
+              חינם. כי מגיע לכם.
+            </motion.h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Free */}
             <motion.div
-              variants={fadeUp}
+              initial="hidden"
+              whileInView="show"
               custom={0}
-              className="glass-card rounded-2xl p-8 border-gradient relative overflow-hidden"
+              viewport={{ once: true }}
+              variants={fade}
+              className="bg-[#fafafa] rounded-2xl border-2 border-[#111] p-7 relative"
             >
-              <div className="absolute top-4 left-4">
-                <span className="text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full">
+              <div className="absolute -top-3 right-6">
+                <span className="text-[10px] font-bold bg-[#111] text-white px-3 py-1 rounded-full">
                   פופולרי
                 </span>
               </div>
-              <h3 className="text-lg font-bold">חינם</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold">₪0</span>
-                <span className="text-muted-foreground text-sm">/ לתמיד</span>
+              <h3 className="text-[15px] font-bold text-[#111]">חינם</h3>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-[48px] font-extrabold text-[#111] leading-none">₪0</span>
+                <span className="text-gray-400 text-[14px]">/ לתמיד</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">לצוותים עד 100 חיילים</p>
-              <Link href="/auth/register" className="block mt-6">
-                <Button size="lg" className="w-full glow">
+              <p className="text-[13px] text-gray-500 mt-2">לצוותים עד 100 חיילים</p>
+              <Link href="/auth/register" className="block mt-5">
+                <Button className="w-full h-10 bg-[#111] hover:bg-[#222] text-white rounded-xl text-[13px]">
                   התחילו עכשיו
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="w-3.5 h-3.5" />
                 </Button>
               </Link>
-              <ul className="mt-6 space-y-3">
+              <ul className="mt-5 space-y-2.5">
                 {[
                   'שבועות ומשמרות ללא הגבלה',
                   'עד 100 חיילים בצוות',
@@ -666,8 +841,8 @@ export default function LandingPage() {
                   'זיהוי קונפליקטים',
                   'לינק שיתוף לחיילים',
                 ].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-primary shrink-0" />
+                  <li key={f} className="flex items-center gap-2 text-[13px] text-gray-600">
+                    <Check className="w-4 h-4 text-[#111] shrink-0" />
                     {f}
                   </li>
                 ))}
@@ -676,21 +851,24 @@ export default function LandingPage() {
 
             {/* Enterprise */}
             <motion.div
-              variants={fadeUp}
+              initial="hidden"
+              whileInView="show"
               custom={1}
-              className="glass-card rounded-2xl p-8 border border-border"
+              viewport={{ once: true }}
+              variants={fade}
+              className="bg-white rounded-2xl border border-gray-200 p-7"
             >
-              <h3 className="text-lg font-bold">ארגוני</h3>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-5xl font-extrabold">צרו קשר</span>
+              <h3 className="text-[15px] font-bold text-[#111]">ארגוני</h3>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-[32px] font-extrabold text-[#111] leading-none">צרו קשר</span>
               </div>
-              <p className="text-sm text-muted-foreground mt-3">לחטיבות ויחידות גדולות</p>
-              <a href="mailto:contact@shiftwize.app" className="block mt-6">
-                <Button size="lg" variant="outline" className="w-full">
+              <p className="text-[13px] text-gray-500 mt-2">לחטיבות ויחידות גדולות</p>
+              <a href="mailto:contact@shiftwize.app" className="block mt-5">
+                <Button variant="outline" className="w-full h-10 rounded-xl text-[13px] border-gray-200">
                   דברו איתנו
                 </Button>
               </a>
-              <ul className="mt-6 space-y-3">
+              <ul className="mt-5 space-y-2.5">
                 {[
                   'הכל בתוכנית החינמית',
                   'חיילים ללא הגבלה',
@@ -699,69 +877,63 @@ export default function LandingPage() {
                   'תמיכה ייעודית',
                   'SLA מותאם',
                 ].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <li key={f} className="flex items-center gap-2 text-[13px] text-gray-600">
+                    <Check className="w-4 h-4 text-gray-300 shrink-0" />
                     {f}
                   </li>
                 ))}
               </ul>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ─── FINAL CTA ─── */}
-      <section className="py-20 sm:py-28 bg-mesh-dark relative noise">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center relative z-10">
+      {/* ─────────────────── FINAL CTA ─────────────────── */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-[700px] mx-auto px-6 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white leading-tight">
+            <h2 className="text-[32px] sm:text-[44px] font-extrabold tracking-tight text-[#111] leading-tight">
               מוכנים לנהל משמרות
               <br />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                כמו שצריך?
+              <span className="bg-gradient-to-l from-blue-600 via-violet-600 to-blue-600 bg-clip-text text-transparent">
+                בלי כאב ראש?
               </span>
             </h2>
-            <p className="text-white/60 mt-4 text-lg">
+            <p className="text-gray-500 mt-4 text-[16px]">
               הגדרה בשתי דקות. בלי כרטיס אשראי. בלי התחייבות.
             </p>
             <Link href="/auth/register" className="inline-block mt-8">
-              <Button
-                size="lg"
-                className="text-base h-14 px-10 bg-white text-foreground hover:bg-white/90 glow animate-pulse-glow"
-              >
-                התחילו בחינם עכשיו
+              <Button className="h-12 px-8 text-[15px] bg-[#111] hover:bg-[#222] text-white rounded-xl gap-2">
+                התחילו בחינם
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
-            <p className="text-white/30 text-xs mt-4">
-              ללא כרטיס אשראי &bull; הגדרה ב-2 דקות &bull; ביטול בכל עת
-            </p>
           </motion.div>
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="py-10 border-t">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+      {/* ─────────────────── FOOTER ─────────────────── */}
+      <footer className="py-8 border-t border-gray-100">
+        <div className="max-w-[1100px] mx-auto px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
-                <Shield className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-[#111] flex items-center justify-center">
+                <Shield className="w-3 h-3 text-white" />
               </div>
-              <span className="font-bold tracking-tight">ShiftWize</span>
+              <span className="text-[13px] font-bold text-[#111]">ShiftWize</span>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-[11px] text-gray-400">
               נבנה ע&quot;י מילואימניק עבור צה&quot;ל &bull; &copy; {new Date().getFullYear()} ShiftWize
             </p>
-            <div className="flex gap-4 text-xs text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">תנאי שימוש</a>
-              <a href="#" className="hover:text-foreground transition-colors">פרטיות</a>
-              <a href="mailto:contact@shiftwize.app" className="hover:text-foreground transition-colors">צור קשר</a>
+            <div className="flex gap-5 text-[11px] text-gray-400">
+              <a href="#" className="hover:text-[#111] transition-colors">תנאי שימוש</a>
+              <a href="#" className="hover:text-[#111] transition-colors">פרטיות</a>
+              <a href="mailto:contact@shiftwize.app" className="hover:text-[#111] transition-colors">צור קשר</a>
             </div>
           </div>
         </div>
